@@ -5,6 +5,7 @@
  */
 
 #include "cros_gralloc.h"
+#include "hwcbuffer.h"
 
 #include <sys/mman.h>
 #include <xf86drm.h>
@@ -227,6 +228,7 @@ static int cros_gralloc_perform(struct gralloc_module_t const* module,
 	case GRALLOC_DRM_GET_FORMAT:
 	case GRALLOC_DRM_GET_DIMENSIONS:
 	case GRALLOC_DRM_GET_BACKING_STORE:
+	case GRALLOC_DRM_IMPORT:
 		break;
 	default:
 		return CROS_GRALLOC_ERROR_UNSUPPORTED;
@@ -265,6 +267,28 @@ static int cros_gralloc_perform(struct gralloc_module_t const* module,
 		out_store = va_arg(args, uint64_t *);
 		*out_store = drv_bo_get_plane_handle(bo->bo, 0).u64;
 		break;
+	case GRALLOC_DRM_IMPORT: {
+		int fd = va_arg(args, int);
+		struct HwcBuffer *hwc_bo = va_arg(args, struct HwcBuffer *);
+		memset(hwc_bo, 0, sizeof(struct HwcBuffer));
+		hwc_bo->format = cros_gralloc_convert_format(hnd->droid_format);
+		hwc_bo->width = hnd->width;
+		hwc_bo->height = hnd->height;
+		uint32_t id;
+		hwc_bo->prime_fd = drv_bo_get_plane_fd(bo->bo, 0);
+		if (drmPrimeFDToHandle(fd, hwc_bo->prime_fd, &id)) {
+			cros_gralloc_error("drmPrimeFDToHandle failed.");
+			return CROS_GRALLOC_ERROR_BAD_HANDLE;
+		}
+
+		size_t total_planes = drv_bo_get_num_planes(bo->bo);
+		for (size_t p = 0; p < total_planes; p++) {
+			hwc_bo->offsets[p] = drv_bo_get_plane_offset(bo->bo, p);
+			hwc_bo->pitches[p] = drv_bo_get_plane_stride(bo->bo, p);
+			hwc_bo->gem_handles[p] = id;
+		}
+		break;
+	}
 	default:
 		return CROS_GRALLOC_ERROR_UNSUPPORTED;
 	}

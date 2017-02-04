@@ -38,6 +38,7 @@ enum {
 	GRALLOC_DRM_GET_FORMAT,
 	GRALLOC_DRM_GET_DIMENSIONS,
 	GRALLOC_DRM_GET_BACKING_STORE,
+	GRALLOC_DRM_IMPORT
 };
 
 constexpr uint32_t cros_gralloc_magic(void)
