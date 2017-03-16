@@ -4,6 +4,8 @@
 
 include common.mk
 
+PKG_CONFIG := pkg-config
+
 PC_DEPS = libdrm
 PC_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(PC_DEPS))
 PC_LIBS := $(shell $(PKG_CONFIG) --libs $(PC_DEPS))
@@ -14,17 +16,21 @@ CFLAGS += -std=c99 -Wall -Wsign-compare -Wpointer-arith -Wcast-qual \
 
 ifdef DRV_AMDGPU
 	CFLAGS += $(shell $(PKG_CONFIG) --cflags libdrm_amdgpu)
+	CFLAGS += -DDRV_AMDGPU
 	LDLIBS += -lamdgpuaddr
 endif
 ifdef DRV_EXYNOS
 	CFLAGS += $(shell $(PKG_CONFIG) --cflags libdrm_exynos)
+	CFLAGS += -DDRV_EXYNOS
 endif
 ifdef DRV_I915
 	CFLAGS += $(shell $(PKG_CONFIG) --cflags libdrm_intel)
+	CFLAGS += -DDRV_I915
 	LDLIBS += $(shell $(PKG_CONFIG) --libs libdrm_intel)
 endif
 ifdef DRV_ROCKCHIP
 	CFLAGS += $(shell $(PKG_CONFIG) --cflags libdrm_rockchip)
+	CFLAGS += -DDRV_ROCKCHIP
 endif
 
 CPPFLAGS += $(PC_CFLAGS)

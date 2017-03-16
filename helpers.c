@@ -377,7 +377,8 @@ int drv_add_kms_flags(struct driver *drv)
 {
 	int ret;
 	uint32_t i, j;
-	uint64_t flag, usage;
+	uint64_t flag = -1;
+	uint64_t usage;
 	drmModePlanePtr plane;
 	drmModePropertyPtr prop;
 	drmModePlaneResPtr resources;
