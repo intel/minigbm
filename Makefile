@@ -4,6 +4,8 @@
 
 include common.mk
 
+PKG_CONFIG := pkg-config
+
 PC_DEPS = libdrm
 PC_CFLAGS := $(shell $(PKG_CONFIG) --cflags $(PC_DEPS))
 PC_LIBS := $(shell $(PKG_CONFIG) --libs $(PC_DEPS))
