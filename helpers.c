@@ -393,7 +393,8 @@ void drv_modify_combination(struct driver *drv, uint32_t format, struct format_m
 
 struct kms_item *drv_query_kms(struct driver *drv, uint32_t *num_items)
 {
-	uint64_t flag, usage;
+	uint64_t usage;
+	uint64_t flag = -1;
 	struct kms_item *items;
 	uint32_t i, j, k, allocations, item_size;
 
