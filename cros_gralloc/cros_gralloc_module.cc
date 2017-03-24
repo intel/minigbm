@@ -305,7 +305,9 @@ static int cros_gralloc_lock_ycbcr(struct gralloc_module_t const* module,
 	}
 
 	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
+        (hnd->droid_format != HAL_PIXEL_FORMAT_YV12) &&
+        (hnd->droid_format != HAL_PIXEL_FORMAT_NV12)) {
+
 		cros_gralloc_error("Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
