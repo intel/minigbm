@@ -16,7 +16,7 @@ uint64_t cros_gralloc_convert_flags(int flags)
 	uint64_t usage = BO_USE_NONE;
 
 	if (flags & GRALLOC_USAGE_CURSOR)
-		usage |= BO_USE_NONE;
+		usage |= BO_USE_CURSOR;
 	if ((flags & sw_read()) == GRALLOC_USAGE_SW_READ_RARELY)
 		usage |= BO_USE_SW_READ_RARELY;
 	if ((flags & sw_read()) == GRALLOC_USAGE_SW_READ_OFTEN)

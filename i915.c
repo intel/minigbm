@@ -17,6 +17,17 @@
 #include "helpers.h"
 #include "util.h"
 
+#if !defined(DRM_CAP_CURSOR_WIDTH)
+#define DRM_CAP_CURSOR_WIDTH 0x8
+#endif
+
+#if !defined(DRM_CAP_CURSOR_HEIGHT)
+#define DRM_CAP_CURSOR_HEIGHT 0x9
+#endif
+
+static const uint32_t kDefaultCursorWidth = 64;
+static const uint32_t kDefaultCursorHeight = 64;
+
 static const uint32_t tileable_formats[] = {
 	DRM_FORMAT_ARGB1555, DRM_FORMAT_ABGR8888, DRM_FORMAT_ARGB8888,
 	DRM_FORMAT_RGB565, DRM_FORMAT_XBGR8888, DRM_FORMAT_XRGB1555,
@@ -32,6 +43,8 @@ struct i915_device
 	int gen;
 	drm_intel_bufmgr *mgr;
 	uint32_t count;
+	uint64_t cursor_width;
+	uint64_t cursor_height;
 };
 
 struct i915_bo
@@ -105,6 +118,8 @@ static int i915_add_combinations(struct driver *drv)
 	drv_modify_combination(drv, DRM_FORMAT_XRGB8888, &metadata,
 			       BO_USE_CURSOR | BO_USE_SCANOUT);
 	drv_modify_combination(drv, DRM_FORMAT_ARGB8888, &metadata,
+			       BO_USE_CURSOR | BO_USE_SCANOUT);
+	drv_modify_combination(drv, DRM_FORMAT_ABGR8888, &metadata,
 			       BO_USE_CURSOR | BO_USE_SCANOUT);
 
 	flags &= ~BO_USE_SW_WRITE_OFTEN;
@@ -185,6 +200,28 @@ static void i915_align_dimensions(struct driver *drv, uint32_t tiling_mode,
 	}
 }
 
+static void get_preferred_cursor_attributes(uint32_t drm_fd,
+					    uint32_t *cursor_width,
+					    uint32_t *cursor_height)
+{
+	uint64_t width = 0, height = 0;
+	if (drmGetCap(drm_fd, DRM_CAP_CURSOR_WIDTH, &width)) {
+		fprintf(stderr, "cannot get cursor width. \n");
+	} else if (drmGetCap(drm_fd, DRM_CAP_CURSOR_HEIGHT, &height)) {
+		fprintf(stderr, "cannot get cursor height. \n");
+	}
+
+	if (!width)
+		width = kDefaultCursorWidth;
+
+	*cursor_width = width;
+
+	if (!height)
+		height = kDefaultCursorHeight;
+
+	*cursor_height = height;
+}
+
 static int i915_verify_dimensions(struct driver *drv, uint32_t stride,
 				  uint32_t height)
 {
@@ -226,6 +263,8 @@ static int i915_init(struct driver *drv)
 		return -EINVAL;
 	}
 
+	get_preferred_cursor_attributes(drv->fd, &i915_dev->cursor_width, &i915_dev->cursor_height);
+
 	drv->priv = i915_dev;
 
 	return i915_add_combinations(drv);
@@ -259,7 +298,23 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height,
 	else
 		tiling_mode = I915_TILING_Y;
 
-	i915_align_dimensions(bo->drv, tiling_mode, &width, &height, bpp);
+	/*
+	 * Align cursor width and height to values expected by Intel
+	 * HW.
+	 */
+	if (flags & BO_USE_CURSOR) {
+	    width = ALIGN(width, i915_dev->cursor_width);
+	    height = ALIGN(height, i915_dev->cursor_height);
+	} else {
+	    i915_align_dimensions(bo->drv, tiling_mode, &width, &height, bpp);
+	}
+
+	/*
+	 * Ensure we pass aligned width/height.
+	 */
+	bo->width = width;
+	bo->height = height;
+
 	drv_bo_from_format(bo, width, height, format);
 
 	if (!i915_verify_dimensions(bo->drv, bo->strides[0], height))
