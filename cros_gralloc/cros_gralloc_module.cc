@@ -167,12 +167,6 @@ static int cros_gralloc_lock(struct gralloc_module_t const* module,
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if ((hnd->droid_format == HAL_PIXEL_FORMAT_YCbCr_420_888)) {
-		cros_gralloc_error("HAL_PIXEL_FORMAT_YCbCr_*_888 format not "
-				   "compatible.");
-		return CROS_GRALLOC_ERROR_BAD_HANDLE;
-	}
-
 	if (sw_access() & usage) {
 		if (bo->map_data) {
 			*vaddr = bo->map_data->addr;
