@@ -13,7 +13,8 @@ SUBDIRS := cros_gralloc
 
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
-	libdrm
+	libdrm \
+	liblog
 
 LOCAL_SRC_FILES := \
 	amdgpu.c \
@@ -56,4 +57,4 @@ LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 LOCAL_MODULE_SUFFIX := $(TARGET_SHLIB_SUFFIX)
 include $(BUILD_SHARED_LIBRARY)
 
-#endif
+endif
