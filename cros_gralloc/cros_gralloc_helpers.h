@@ -13,6 +13,13 @@
 #include <hardware/gralloc.h>
 #include <system/graphics.h>
 
+/* This enumeration can be deleted if Android defined it in
+ * system/core/include/system/graphics.h
+ */
+enum {
+    HAL_PIXEL_FORMAT_NV12 = 0x102,
+};
+
 /* Use these error codes derived from gralloc1 to make transition easier when
  * it happens
  */
