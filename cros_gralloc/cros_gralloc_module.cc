@@ -8,6 +8,7 @@
 
 #include <sys/mman.h>
 #include <xf86drm.h>
+#include <assert.h>
 
 int cros_gralloc_validate_reference(struct cros_gralloc_module *mod,
 				    struct cros_gralloc_handle *hnd,
