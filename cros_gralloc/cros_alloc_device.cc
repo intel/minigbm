@@ -98,7 +98,7 @@ static int cros_gralloc_alloc(alloc_device_t *dev, int w, int h, int format, int
 			      buffer_handle_t *handle, int *stride)
 {
 	auto mod = (struct cros_gralloc_module *)dev->common.module;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	auto bo = cros_gralloc_bo_create(mod->drv, w, h, format, usage);
 	if (!bo)
@@ -125,7 +125,7 @@ static int cros_gralloc_free(alloc_device_t *dev, buffer_handle_t handle)
 	struct cros_gralloc_bo *bo;
 	auto hnd = (struct cros_gralloc_handle *)handle;
 	auto mod = (struct cros_gralloc_module *)dev->common.module;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	if (cros_gralloc_validate_handle(hnd)) {
 		cros_gralloc_error("Invalid handle.");
@@ -149,7 +149,7 @@ static int cros_gralloc_close(struct hw_device_t *dev)
 {
 	auto mod = (struct cros_gralloc_module *)dev->module;
 	auto alloc = (struct alloc_device_t *)dev;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	if (mod->drv) {
 		drv_destroy(mod->drv);
@@ -167,7 +167,7 @@ static int cros_gralloc_close(struct hw_device_t *dev)
 int cros_gralloc_open(const struct hw_module_t *mod, const char *name, struct hw_device_t **dev)
 {
 	auto module = (struct cros_gralloc_module *)mod;
-	std::lock_guard<std::mutex> lock(module->mutex);
+	ScopedSpinLock lock(module->lock);
 
 	if (module->drv)
 		return CROS_GRALLOC_ERROR_NONE;
