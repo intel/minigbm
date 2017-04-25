@@ -50,7 +50,7 @@ static int cros_gralloc_register_buffer(struct gralloc_module_t const *module,
 	struct cros_gralloc_bo *bo;
 	auto hnd = (struct cros_gralloc_handle *)handle;
 	auto mod = (struct cros_gralloc_module *)module;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	if (cros_gralloc_validate_handle(hnd)) {
 		cros_gralloc_error("Invalid handle.");
@@ -119,7 +119,7 @@ static int cros_gralloc_unregister_buffer(struct gralloc_module_t const *module,
 	struct cros_gralloc_bo *bo;
 	auto hnd = (struct cros_gralloc_handle *)handle;
 	auto mod = (struct cros_gralloc_module *)module;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	if (cros_gralloc_validate_handle(hnd)) {
 		cros_gralloc_error("Invalid handle.");
@@ -150,7 +150,7 @@ static int cros_gralloc_lock(struct gralloc_module_t const *module, buffer_handl
 	struct cros_gralloc_bo *bo;
 	auto mod = (struct cros_gralloc_module *)module;
 	auto hnd = (struct cros_gralloc_handle *)handle;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	if (cros_gralloc_validate_handle(hnd)) {
 		cros_gralloc_error("Invalid handle.");
@@ -191,7 +191,7 @@ static int cros_gralloc_unlock(struct gralloc_module_t const *module, buffer_han
 	struct cros_gralloc_bo *bo;
 	auto hnd = (struct cros_gralloc_handle *)handle;
 	auto mod = (struct cros_gralloc_module *)module;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	if (cros_gralloc_validate_handle(hnd)) {
 		cros_gralloc_error("Invalid handle.");
@@ -220,7 +220,7 @@ static int cros_gralloc_perform(struct gralloc_module_t const *module, int op, .
 	buffer_handle_t handle;
 	uint32_t *out_width, *out_height, *out_stride;
 	auto mod = (struct cros_gralloc_module *)module;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	switch (op) {
 	case GRALLOC_DRM_GET_STRIDE:
@@ -283,7 +283,7 @@ static int cros_gralloc_lock_ycbcr(struct gralloc_module_t const *module, buffer
 	struct cros_gralloc_bo *bo;
 	auto hnd = (struct cros_gralloc_handle *)handle;
 	auto mod = (struct cros_gralloc_module *)module;
-	std::lock_guard<std::mutex> lock(mod->mutex);
+	ScopedSpinLock lock(mod->lock);
 
 	if (cros_gralloc_validate_handle(hnd)) {
 		cros_gralloc_error("Invalid handle.");
