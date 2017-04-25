@@ -20,6 +20,17 @@
 #define I915_CACHELINE_SIZE 64
 #define I915_CACHELINE_MASK (I915_CACHELINE_SIZE - 1)
 
+#if !defined(DRM_CAP_CURSOR_WIDTH)
+#define DRM_CAP_CURSOR_WIDTH 0x8
+#endif
+
+#if !defined(DRM_CAP_CURSOR_HEIGHT)
+#define DRM_CAP_CURSOR_HEIGHT 0x9
+#endif
+
+static const uint32_t kDefaultCursorWidth = 64;
+static const uint32_t kDefaultCursorHeight = 64;
+
 static const uint32_t tileable_formats[] = { DRM_FORMAT_ARGB1555, DRM_FORMAT_ABGR8888,
 					     DRM_FORMAT_ARGB8888, DRM_FORMAT_RGB565,
 					     DRM_FORMAT_XBGR8888, DRM_FORMAT_XRGB1555,
@@ -32,6 +43,8 @@ static const uint32_t linear_only_formats[] = { DRM_FORMAT_GR88, DRM_FORMAT_R8, 
 struct i915_device {
 	uint32_t gen;
 	int32_t has_llc;
+	uint64_t cursor_width;
+	uint64_t cursor_height;
 };
 
 static uint32_t i915_get_gen(int device_id)
@@ -97,6 +110,7 @@ static int i915_add_combinations(struct driver *drv)
 
 	drv_modify_combination(drv, DRM_FORMAT_XRGB8888, &metadata, BO_USE_CURSOR | BO_USE_SCANOUT);
 	drv_modify_combination(drv, DRM_FORMAT_ARGB8888, &metadata, BO_USE_CURSOR | BO_USE_SCANOUT);
+	drv_modify_combination(drv, DRM_FORMAT_ABGR8888, &metadata, BO_USE_CURSOR | BO_USE_SCANOUT);
 
 	flags &= ~BO_USE_SW_WRITE_OFTEN;
 	flags &= ~BO_USE_SW_READ_OFTEN;
@@ -132,6 +146,28 @@ static int i915_add_combinations(struct driver *drv)
 
 	free(items);
 	return 0;
+}
+
+static void get_preferred_cursor_attributes(uint32_t drm_fd,
+					    uint64_t *cursor_width,
+					    uint64_t *cursor_height)
+{
+	uint64_t width = 0, height = 0;
+	if (drmGetCap(drm_fd, DRM_CAP_CURSOR_WIDTH, &width)) {
+		fprintf(stderr, "cannot get cursor width. \n");
+	} else if (drmGetCap(drm_fd, DRM_CAP_CURSOR_HEIGHT, &height)) {
+		fprintf(stderr, "cannot get cursor height. \n");
+	}
+
+	if (!width)
+		width = kDefaultCursorWidth;
+
+	*cursor_width = width;
+
+	if (!height)
+		height = kDefaultCursorHeight;
+
+	*cursor_height = height;
 }
 
 static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *stride,
@@ -226,6 +262,8 @@ static int i915_init(struct driver *drv)
 
 	drv->priv = i915;
 
+	get_preferred_cursor_attributes(drv->fd, &i915->cursor_width, &i915->cursor_height);
+
 	return i915_add_combinations(drv);
 }
 
@@ -237,6 +275,7 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 	uint32_t stride;
 	struct drm_i915_gem_create gem_create;
 	struct drm_i915_gem_set_tiling gem_set_tiling;
+	struct i915_device *i915_dev = (struct i915_device *)bo->drv->priv;
 
 	if (flags & (BO_USE_CURSOR | BO_USE_LINEAR | BO_USE_SW_READ_OFTEN | BO_USE_SW_WRITE_OFTEN))
 		bo->tiling = I915_TILING_NONE;
@@ -255,9 +294,24 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 		bo->tiling = I915_TILING_NONE;
 	}
 
-	ret = i915_align_dimensions(bo, bo->tiling, &stride, &height);
-	if (ret)
-		return ret;
+	/*
+	 * Align cursor width and height to values expected by Intel
+	 * HW.
+	 */
+	if (flags & BO_USE_CURSOR) {
+	    width = ALIGN(width, i915_dev->cursor_width);
+	    height = ALIGN(height, i915_dev->cursor_height);
+	} else {
+	    ret = i915_align_dimensions(bo, bo->tiling, &stride, &height);
+	    if (ret)
+ 		return ret;
+	}
+
+	/*
+	 * Ensure we pass aligned width/height.
+	 */
+	bo->width = width;
+	bo->height = height;
 
 	drv_bo_from_format(bo, stride, height, format);
 
