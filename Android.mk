@@ -35,6 +35,11 @@ LOCAL_SRC_FILES := \
 	vgem.c \
 	virtio_gpu.c
 
+ifeq ($(ENABLE_HWC_TEST_ANDROID),true)
+LOCAL_SRC_FILES += gbm.c \
+	gbm_helpers.c
+endif
+
 include $(MINIGBM_GRALLOC_MK)
 
 LOCAL_CPPFLAGS += -std=c++11 -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64
