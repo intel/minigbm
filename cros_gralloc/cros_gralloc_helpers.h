@@ -50,6 +50,8 @@ constexpr uint32_t sw_access = GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRI
 
 uint64_t cros_gralloc_convert_flags(int flags);
 
+uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_flags);
+
 uint32_t cros_gralloc_convert_format(int format);
 
 int32_t cros_gralloc_rendernode_open(struct driver **drv);

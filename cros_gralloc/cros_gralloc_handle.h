@@ -30,7 +30,17 @@ struct cros_gralloc_handle {
 	uint32_t magic;
 	uint32_t pixel_stride;
 	int32_t droid_format;
-	int32_t usage; /* Android usage. */
+	uint32_t usage; /* Android usage. */
+	uint64_t consumer_usage; /* Android consumer usage. */
+	uint64_t producer_usage; /* Android producer usage. */
+};
+
+struct cros_gralloc_descriptor {
+	uint32_t width;
+	uint32_t height;
+	int32_t droid_format;
+	uint64_t consumer_usage; /* Android consumer usage. */
+	uint64_t producer_usage; /* Android producer usage. */
 };
 
 #endif

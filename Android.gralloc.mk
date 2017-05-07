@@ -7,4 +7,4 @@ LOCAL_CPP_EXTENSION := .cc
 LOCAL_SRC_FILES += \
 	cros_gralloc/cros_alloc_device.cc \
 	cros_gralloc/cros_gralloc_helpers.cc \
-	cros_gralloc/cros_gralloc_module.cc
+	cros_gralloc/cros_gralloc_module_1.cc

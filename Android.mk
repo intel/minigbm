@@ -14,7 +14,8 @@ SUBDIRS := cros_gralloc
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libdrm \
-	liblog
+	liblog \
+	libsync
 
 LOCAL_SRC_FILES := \
 	amdgpu.c \

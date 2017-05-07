@@ -11,6 +11,8 @@
 #include <fcntl.h>
 #include <xf86drm.h>
 
+#include <hardware/gralloc1.h>
+
 uint64_t cros_gralloc_convert_flags(int flags)
 {
 	uint64_t usage = BO_USE_NONE;
@@ -53,6 +55,55 @@ uint64_t cros_gralloc_convert_flags(int flags)
 	if (flags & GRALLOC_USAGE_RENDERSCRIPT)
 		/* We use CPU for compute. */
 		usage |= BO_USE_LINEAR;
+
+	return usage;
+}
+
+uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_flags)
+{
+	uint64_t usage = BO_USE_NONE;
+
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_CURSOR)
+		usage |= BO_USE_CURSOR;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_CPU_READ)
+		usage |= BO_USE_SW_READ_RARELY;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_CPU_READ_OFTEN)
+		usage |= BO_USE_SW_READ_OFTEN;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_GPU_TEXTURE)
+		usage |= BO_USE_TEXTURE;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_CLIENT_TARGET)
+		usage |= BO_USE_RENDERING | BO_USE_SCANOUT;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_HWCOMPOSER)
+		/* HWC wants to use display hardware, but can defer to OpenGL. */
+		usage |= BO_USE_SCANOUT | BO_USE_RENDERING;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_VIDEO_ENCODER)
+		/*HACK: See b/30054495 */
+		usage |= BO_USE_SW_READ_OFTEN;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_CAMERA)
+		usage |= BO_USE_HW_CAMERA_READ;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_RENDERSCRIPT)
+		/* We use CPU for compute. */
+		usage |= BO_USE_LINEAR;
+
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_READ)
+		usage |= BO_USE_SW_READ_RARELY;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_READ_OFTEN)
+		usage |= BO_USE_SW_READ_OFTEN;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_WRITE)
+		usage |= BO_USE_SW_WRITE_RARELY;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_WRITE_OFTEN)
+		usage |= BO_USE_SW_WRITE_OFTEN;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_GPU_RENDER_TARGET)
+		usage |= BO_USE_RENDERING;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_VIDEO_DECODER)
+		/* Video wants to use display hardware, but can defer to OpenGL. */
+		usage |= BO_USE_SCANOUT | BO_USE_RENDERING;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_GPU_RENDER_TARGET)
+		usage |= BO_USE_NONE;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_PROTECTED)
+		usage |= BO_USE_PROTECTED;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CAMERA)
+		usage |= BO_USE_HW_CAMERA_WRITE;
 
 	return usage;
 }

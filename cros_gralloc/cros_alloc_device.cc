@@ -7,20 +7,18 @@
 #include "cros_gralloc.h"
 
 static struct cros_gralloc_bo *cros_gralloc_bo_create(struct driver *drv, int width, int height,
-						      int format, int usage)
+						      int format, uint64_t drv_usage, bool hwcomposer_usage)
 {
-	uint64_t drv_usage;
 	uint32_t drv_format;
 	struct combination *combo;
 	struct cros_gralloc_bo *bo;
 
 	drv_format = cros_gralloc_convert_format(format);
 	drv_format = drv_resolve_format(drv, drv_format);
-	drv_usage = cros_gralloc_convert_flags(usage);
 
 	combo = drv_get_combination(drv, drv_format, drv_usage);
 
-	if (!combo && (usage & GRALLOC_USAGE_HW_COMPOSER)) {
+	if (!combo && hwcomposer_usage) {
 		drv_usage &= ~BO_USE_SCANOUT;
 		combo = drv_get_combination(drv, drv_format, drv_usage);
 	}
@@ -28,7 +26,7 @@ static struct cros_gralloc_bo *cros_gralloc_bo_create(struct driver *drv, int wi
 	if (!combo) {
 		cros_gralloc_error("Unsupported combination -- HAL format: %u, HAL flags: %u, "
 				   "drv_format: %4.4s, drv_flags: %llu",
-				   format, usage, reinterpret_cast<char *>(&drv_format),
+				   format, drv_usage, reinterpret_cast<char *>(&drv_format),
 				   static_cast<unsigned long long>(drv_usage));
 		return NULL;
 	}
@@ -98,26 +96,16 @@ static int cros_gralloc_alloc(alloc_device_t *dev, int w, int h, int format, int
 			      buffer_handle_t *handle, int *stride)
 {
 	auto mod = (struct cros_gralloc_module *)dev->common.module;
-	ScopedSpinLock lock(mod->lock);
+	uint64_t drv_usage = cros_gralloc_convert_flags(usage);
+	int err = cros_gralloc1_alloc(mod, w, h, format, drv_usage, usage & GRALLOC_USAGE_HW_COMPOSER, handle);
 
-	auto bo = cros_gralloc_bo_create(mod->drv, w, h, format, usage);
-	if (!bo)
-		return CROS_GRALLOC_ERROR_NO_RESOURCES;
+	if (err == CROS_GRALLOC_ERROR_NONE) {
+	    struct cros_gralloc_handle* hnd = (struct cros_gralloc_handle*)handle;
+	    *stride = static_cast<int>(hnd->pixel_stride);
+	    hnd->usage = static_cast<uint32_t>(usage);
+	}
 
-	auto hnd = cros_gralloc_handle_from_bo(bo->bo);
-	hnd->droid_format = static_cast<int32_t>(format);
-	hnd->usage = static_cast<int32_t>(usage);
-
-	mod->handles[hnd].registrations = 0;
-	mod->handles[hnd].bo = bo;
-	bo->hnd = hnd;
-
-	mod->buffers[drv_bo_get_plane_handle(bo->bo, 0).u32] = bo;
-
-	*stride = static_cast<int>(hnd->pixel_stride);
-	*handle = &hnd->base;
-
-	return CROS_GRALLOC_ERROR_NONE;
+	return err;
 }
 
 static int cros_gralloc_free(alloc_device_t *dev, buffer_handle_t handle)
@@ -192,6 +180,28 @@ int cros_gralloc_open(const struct hw_module_t *mod, const char *name, struct hw
 	alloc->common.close = cros_gralloc_close;
 
 	*dev = &alloc->common;
+
+	return CROS_GRALLOC_ERROR_NONE;
+}
+
+int cros_gralloc1_alloc(struct cros_gralloc_module *mod, int w, int h, int format, uint64_t drv_usage,
+			bool hwcomposer_usage, buffer_handle_t *handle)
+{
+	ScopedSpinLock lock(mod->lock);
+
+	auto bo = cros_gralloc_bo_create(mod->drv, w, h, format, drv_usage, hwcomposer_usage);
+	if (!bo)
+		return CROS_GRALLOC_ERROR_NO_RESOURCES;
+
+	auto hnd = cros_gralloc_handle_from_bo(bo->bo);
+	hnd->droid_format = static_cast<int32_t>(format);
+
+	mod->handles[hnd].registrations = 0;
+	mod->handles[hnd].bo = bo;
+	bo->hnd = hnd;
+
+	mod->buffers[drv_bo_get_plane_handle(bo->bo, 0).u32] = bo;
+	*handle = &hnd->base;
 
 	return CROS_GRALLOC_ERROR_NONE;
 }

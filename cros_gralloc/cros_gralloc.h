@@ -70,6 +70,9 @@ struct cros_gralloc_module {
 
 int cros_gralloc_open(const struct hw_module_t *mod, const char *name, struct hw_device_t **dev);
 
+int cros_gralloc1_alloc(struct cros_gralloc_module *mod, int w, int h, int format, uint64_t drv_usage,
+			bool hwcomposer_usage, buffer_handle_t *handle);
+
 int cros_gralloc_validate_reference(struct cros_gralloc_module *mod,
 				    struct cros_gralloc_handle *hnd, struct cros_gralloc_bo **obj);
 
