@@ -35,7 +35,7 @@ static const uint32_t tileable_formats[] = { DRM_FORMAT_ARGB1555, DRM_FORMAT_ABG
 					     DRM_FORMAT_ARGB8888, DRM_FORMAT_RGB565,
 					     DRM_FORMAT_XBGR8888, DRM_FORMAT_XRGB1555,
 					     DRM_FORMAT_XRGB8888, DRM_FORMAT_UYVY,
-					     DRM_FORMAT_YUYV };
+					     DRM_FORMAT_YUYV, DRM_FORMAT_NV12 };
 
 static const uint32_t linear_only_formats[] = { DRM_FORMAT_GR88, DRM_FORMAT_R8, DRM_FORMAT_YVU420,
 						DRM_FORMAT_YVU420_ANDROID };
@@ -453,7 +453,7 @@ static uint32_t i915_resolve_format(uint32_t format)
 		/*HACK: See b/28671744 */
 		return DRM_FORMAT_XBGR8888;
 	case DRM_FORMAT_FLEX_YCbCr_420_888:
-		return DRM_FORMAT_YVU420_ANDROID;
+		return DRM_FORMAT_NV12;
 	default:
 		return format;
 	}
