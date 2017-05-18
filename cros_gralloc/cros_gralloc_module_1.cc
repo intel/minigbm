@@ -470,7 +470,7 @@ static int32_t cros_gralloc1_allocate(gralloc1_device_t* device,
 				      hnd->consumer_usage & GRALLOC1_CONSUMER_USAGE_HWCOMPOSER,
 				      outBuffers);
 	if (err == CROS_GRALLOC_ERROR_NONE) {
-	    struct cros_gralloc_handle* handle = (struct cros_gralloc_handle*)hnd;
+	    struct cros_gralloc_handle* handle = (struct cros_gralloc_handle*)outBuffers;
 	    handle->consumer_usage = hnd->consumer_usage;
 	    handle->producer_usage = hnd->producer_usage;
 	    handle->usage = 0;
@@ -535,7 +535,8 @@ static int32_t validate_lock(gralloc1_device_t* device,
 
 	if (producerUsage != GRALLOC1_PRODUCER_USAGE_NONE &&
 		(consumerUsage != GRALLOC1_PRODUCER_USAGE_NONE)) {
-	    return GRALLOC1_ERROR_BAD_VALUE;
+            cros_gralloc_error("Buffer usage set for both producer and consumer");
+	    //return GRALLOC1_ERROR_BAD_VALUE;
 	}
 
 	auto hnd = get_gralloc_handle(device, buffer);
@@ -726,19 +727,18 @@ static int cros_gralloc1_open(const struct hw_module_t *mod, const char *name, s
 	auto module = (struct cros_gralloc_module *)mod;
 	ScopedSpinLock lock(module->lock);
 
-	if (module->drv)
-		return CROS_GRALLOC_ERROR_NONE;
+	if (!module->drv) {
 
-	if (strcmp(name, GRALLOC_HARDWARE_MODULE_ID)) {
-		cros_gralloc_error("Incorrect device name - %s.", name);
-		return CROS_GRALLOC_ERROR_UNSUPPORTED;
+		if (strcmp(name, GRALLOC_HARDWARE_MODULE_ID)) {
+			cros_gralloc_error("Incorrect device name - %s.", name);
+			return CROS_GRALLOC_ERROR_UNSUPPORTED;
+		}
+
+		if (cros_gralloc_rendernode_open(&module->drv)) {
+			cros_gralloc_error("Failed to open render node.");
+			return CROS_GRALLOC_ERROR_NO_RESOURCES;
+		}
 	}
-
-	if (cros_gralloc_rendernode_open(&module->drv)) {
-		cros_gralloc_error("Failed to open render node.");
-		return CROS_GRALLOC_ERROR_NO_RESOURCES;
-	}
-
 	gralloc1_device_t *dev = new gralloc1_device_t();
 	dev->common.tag = HARDWARE_DEVICE_TAG;
 	dev->common.version = 0;

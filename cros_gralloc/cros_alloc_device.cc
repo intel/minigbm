@@ -196,7 +196,7 @@ int cros_gralloc1_alloc(struct cros_gralloc_module *mod, int w, int h, int forma
 	auto hnd = cros_gralloc_handle_from_bo(bo->bo);
 	hnd->droid_format = static_cast<int32_t>(format);
 
-	mod->handles[hnd].registrations = 0;
+	mod->handles[hnd].registrations = 1;
 	mod->handles[hnd].bo = bo;
 	bo->hnd = hnd;
 
