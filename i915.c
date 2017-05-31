@@ -451,7 +451,9 @@ static uint32_t i915_resolve_format(uint32_t format)
 	switch (format) {
 	case DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED:
 		/*HACK: See b/28671744 */
-		return DRM_FORMAT_XBGR8888;
+		return DRM_FORMAT_NV12;
+	case DRM_FORMAT_FLEX_BLOB:
+		return DRM_FORMAT_NV12;
 	case DRM_FORMAT_FLEX_YCbCr_420_888:
 		return DRM_FORMAT_YVU420_ANDROID;
 	default:
