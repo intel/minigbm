@@ -31,6 +31,8 @@ struct cros_gralloc_handle {
 	uint32_t pixel_stride;
 	int32_t droid_format;
 	int32_t usage; /* Android usage. */
+	uint32_t consumer_usage;
+	uint32_t producer_usage;
 };
 
 typedef const struct cros_gralloc_handle *cros_gralloc_handle_t;
