@@ -69,6 +69,8 @@ uint64_t cros_gralloc_convert_flags(int flags);
 
 uint32_t cros_gralloc_convert_format(int format);
 
+int32_t cros_gralloc_invert_format(int format);
+
 int32_t cros_gralloc_rendernode_open(struct driver **drv);
 
 int32_t cros_gralloc_validate_handle(struct cros_gralloc_handle *hnd);

@@ -111,7 +111,7 @@ static int cros_gralloc_alloc(alloc_device_t *dev, int w, int h, int format,
 		return CROS_GRALLOC_ERROR_NO_RESOURCES;
 
 	auto hnd = cros_gralloc_handle_from_bo(bo->bo);
-	hnd->droid_format = static_cast<int32_t>(format);
+	hnd->droid_format = static_cast<int32_t>(cros_gralloc_invert_format(hnd->format));
 	hnd->usage = static_cast<int32_t>(usage);
 
 	mod->handles[hnd].registrations = 0;
