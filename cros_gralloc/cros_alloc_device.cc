@@ -15,9 +15,9 @@ static struct cros_gralloc_bo *cros_gralloc_bo_create(struct driver *drv,
 	struct combination *combo;
 	struct cros_gralloc_bo *bo;
 
-	drv_format = cros_gralloc_convert_format(format);
-	drv_format = drv_resolve_format(drv, drv_format);
 	drv_usage = cros_gralloc_convert_flags(usage);
+	drv_format = cros_gralloc_convert_format(format);
+	drv_format = drv_resolve_format(drv, drv_format, drv_usage);
 
 	combo = drv_get_combination(drv, drv_format, drv_usage);
 

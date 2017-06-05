@@ -33,7 +33,7 @@ static int vgem_bo_create(struct bo *bo, uint32_t width, uint32_t height,
 	return ret;
 }
 
-static uint32_t vgem_resolve_format(uint32_t format)
+static uint32_t vgem_resolve_format(uint32_t format, uint32_t flags)
 {
 	switch (format) {
 	case DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED:

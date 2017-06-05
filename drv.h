@@ -159,7 +159,7 @@ uint32_t
 drv_bo_get_format(struct bo *bo);
 
 uint32_t
-drv_resolve_format(struct driver *drv, uint32_t format);
+drv_resolve_format(struct driver *drv, uint32_t format, uint32_t flags);
 
 int
 drv_stride_from_format(uint32_t format, uint32_t width, size_t plane);

@@ -31,11 +31,11 @@ static const uint32_t kDefaultCursorHeight = 64;
 static const uint32_t tileable_formats[] = {
 	DRM_FORMAT_ARGB1555, DRM_FORMAT_ABGR8888, DRM_FORMAT_ARGB8888,
 	DRM_FORMAT_RGB565, DRM_FORMAT_XBGR8888, DRM_FORMAT_XRGB1555,
-	DRM_FORMAT_XRGB8888, DRM_FORMAT_UYVY, DRM_FORMAT_YUYV
+	DRM_FORMAT_XRGB8888, DRM_FORMAT_UYVY, DRM_FORMAT_YUYV, DRM_FORMAT_NV12
 };
 
 static const uint32_t linear_only_formats[] = {
-	DRM_FORMAT_GR88, DRM_FORMAT_R8, DRM_FORMAT_YVU420
+	DRM_FORMAT_GR88, DRM_FORMAT_R8, DRM_FORMAT_YVU420, DRM_FORMAT_NV12
 };
 
 struct i915_device
@@ -461,13 +461,20 @@ static int i915_bo_unmap(struct bo *bo, struct map_info *data)
 	return ret;
 }
 
-static uint32_t i915_resolve_format(uint32_t format)
+static uint32_t i915_resolve_format(uint32_t format, uint32_t flags)
 {
 	switch (format) {
 	case DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED:
+		/* Camera on Intel platforms requires NV12. */
+		if ((flags & BO_USE_HW_CAMERA_WRITE) ||
+				(flags & BO_USE_HW_CAMERA_READ))
+			return DRM_FORMAT_NV12;
 		/*HACK: See b/28671744 */
 		return DRM_FORMAT_XBGR8888;
 	case DRM_FORMAT_FLEX_YCbCr_420_888:
+		if ((flags & BO_USE_HW_CAMERA_WRITE) ||
+				(flags & BO_USE_HW_CAMERA_READ))
+			return DRM_FORMAT_NV12;
 		return DRM_FORMAT_YVU420;
 	default:
 		return format;
