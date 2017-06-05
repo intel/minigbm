@@ -11,6 +11,8 @@
 #include <fcntl.h>
 #include <xf86drm.h>
 
+#include <sync/sync.h>
+
 cros_gralloc_driver::cros_gralloc_driver() : _drv(nullptr)
 {
 }
@@ -135,6 +137,8 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	hnd->magic = cros_gralloc_magic;
 	hnd->droid_format = descriptor->droid_format;
 	hnd->usage = descriptor->producer_usage;
+	hnd->producer_usage = descriptor->producer_usage;
+	hnd->consumer_usage = descriptor->consumer_usage;
 
 	id = drv_bo_get_plane_handle(bo, 0).u32;
 	auto buffer = new cros_gralloc_buffer(id, bo, hnd);
@@ -248,8 +252,7 @@ int32_t cros_gralloc_driver::map(buffer_handle_t handle, int32_t acquire_fence, 
 	}
 
 	if (acquire_fence >= 0) {
-		cros_gralloc_error("Sync wait not yet supported.");
-		return CROS_GRALLOC_ERROR_UNSUPPORTED;
+		sync_wait(acquire_fence, -1);
 	}
 
 	return buffer->map(flags, addr);
