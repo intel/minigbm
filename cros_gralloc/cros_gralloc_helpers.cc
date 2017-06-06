@@ -45,6 +45,30 @@ uint32_t cros_gralloc_convert_format(int format)
 	return DRM_FORMAT_NONE;
 }
 
+int32_t cros_gralloc_invert_format(int format)
+{
+        /* Convert the DRM FourCC into the most specific HAL pixel format. */
+        switch (format) {
+        case DRM_FORMAT_ARGB8888:
+                return HAL_PIXEL_FORMAT_BGRA_8888;
+        case DRM_FORMAT_RGB565:
+                return HAL_PIXEL_FORMAT_RGB_565;
+        case DRM_FORMAT_RGB888:
+                return HAL_PIXEL_FORMAT_RGB_888;
+        case DRM_FORMAT_ABGR8888:
+                return HAL_PIXEL_FORMAT_RGBA_8888;
+        case DRM_FORMAT_XBGR8888:
+                return HAL_PIXEL_FORMAT_RGBX_8888;
+        case DRM_FORMAT_NV12:
+                return HAL_PIXEL_FORMAT_NV12;
+        case DRM_FORMAT_R8:
+                return HAL_PIXEL_FORMAT_BLOB;
+        default:
+                cros_gralloc_error("Unhandled DRM format %4.4s", reinterpret_cast<char *>(&format));
+                return 0;
+        }
+}
+
 cros_gralloc_handle_t cros_gralloc_convert_handle(buffer_handle_t handle)
 {
 	auto hnd = reinterpret_cast<cros_gralloc_handle_t>(handle);
