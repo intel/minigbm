@@ -19,6 +19,7 @@ constexpr uint32_t handle_data_size =
     ((sizeof(struct cros_gralloc_handle) - offsetof(cros_gralloc_handle, fds[0])) / sizeof(int));
 
 uint32_t cros_gralloc_convert_format(int32_t format);
+int32_t cros_gralloc_invert_format(int format);
 
 cros_gralloc_handle_t cros_gralloc_convert_handle(buffer_handle_t handle);
 
