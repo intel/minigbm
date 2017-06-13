@@ -350,14 +350,24 @@ int32_t CrosGralloc1::lock(
 	return ret;
 }
 
-int32_t update_flex_layout( struct android_ycbcr* ycbcr, struct android_flex_layout* outData)
+android_flex_plane_t ycbcrplanes[3];
+
+int32_t update_flex_layout( struct android_ycbcr* ycbcr, struct android_flex_layout* outFlexLayout)
 {
-       ycbcr = reinterpret_cast<struct android_flex_layout *>(outData);
+        /*Need to add generic support*/
+       ycbcrplanes[0].component = FLEX_COMPONENT_Y;
+       ycbcrplanes[0].top_left = (uint8_t *)ycbcr->y;
+       ycbcrplanes[0].h_increment = ycbcr->ystride;
+       ycbcrplanes[1].component = FLEX_COMPONENT_Cb;
+       ycbcrplanes[1].top_left = (uint8_t *)ycbcr->cb;
+       ycbcrplanes[1].h_increment = ycbcr->cstride;
+       ycbcrplanes[2].component = FLEX_COMPONENT_Cr;
+       ycbcrplanes[2].top_left = (uint8_t *)ycbcr->cr;
+       ycbcrplanes[2].h_increment = ycbcr->chroma_step;
+       outFlexLayout->format = FLEX_FORMAT_YCbCr;
+       outFlexLayout->planes = ycbcrplanes;
+       outFlexLayout->num_planes = 3;
        return 0;
-}
-
-bool is_supported_yuv_format(){
-
 }
 
 int32_t CrosGralloc1::lockFlex(
@@ -372,17 +382,27 @@ int32_t CrosGralloc1::lockFlex(
        int32_t outReleaseFence = 0;
        struct android_ycbcr ycbcrData;
 
-       /*Check the format and for YUV format only use lockYCbCr*/
-       if(is_supported_yuv_format()) {
+       /*Check the format and support only for YUV format */
+       auto hnd = cros_gralloc_convert_handle(bufferHandle);
+       if (!hnd) {
+		cros_gralloc_error("lockFlex: Invalid handle.");
+		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+       }
 
-           ret = lockYCbCr(bufferHandle, producerUsage, consumerUsage, \
+       if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
+	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
+		cros_gralloc_error("lockFlex: Non-YUV format not compatible.");
+		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+       }
+
+       ret = lockYCbCr(bufferHandle, producerUsage, consumerUsage, \
                           accessRegion, &ycbcrData, acquireFence);
 
-           /* convert the data in flex format*/
-           update_flex_layout( &ycbcrData, outData);
+       /* convert the data in flex format*/
+       update_flex_layout( &ycbcrData, outData);
 
-           ret = unlock(bufferHandle, &outReleaseFence);
-       }
+       ret = unlock(bufferHandle, &outReleaseFence);
+
        return ret;
 }
 

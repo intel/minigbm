@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 LOCAL_CPP_EXTENSION := .cc
-BOARD_USES_GRALLOC1 := true
+#BOARD_USES_GRALLOC1 := true
 
 LOCAL_SRC_FILES += \
 	cros_gralloc/cros_gralloc_buffer.cc \
