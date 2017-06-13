@@ -25,6 +25,7 @@
 
 #include <inttypes.h>
 
+
 template <typename PFN, typename T>
 static gralloc1_function_pointer_t asFP(T function)
 {
@@ -82,6 +83,10 @@ uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_
 }
 
 namespace android {
+
+/* CrosGralloc1 is a Singleton and pCrosGralloc1 holds pointer to its instance*/
+CrosGralloc1 *pCrosGralloc1 = NULL;
+
 
 CrosGralloc1::CrosGralloc1 ()
 {
@@ -265,7 +270,6 @@ int32_t CrosGralloc1::allocate(
 	uint64_t usage = cros_gralloc1_convert_flags(descriptor->producer_usage,
 						     descriptor->consumer_usage);
 	descriptor->drv_usage = usage;
-
 	bool supported = mModule->driver->is_supported(descriptor);
 	if (!supported && (descriptor->consumer_usage & GRALLOC1_CONSUMER_USAGE_HWCOMPOSER)) {
 		descriptor->drv_usage &= ~BO_USE_SCANOUT;
@@ -274,12 +278,11 @@ int32_t CrosGralloc1::allocate(
 
 	if (!supported) {
 		cros_gralloc_error("Unsupported combination -- HAL format: %u, HAL flags: %u, "
-				   "drv_format: %4.4s, drv_flags: %llu",
-				   descriptor->droid_format, usage, reinterpret_cast<char *>(descriptor->drm_format),
+                                  "drv_format: %u, drv_flags: %llu",
+                                   descriptor->droid_format, usage, descriptor->drm_format,
 				   static_cast<unsigned long long>(descriptor->drv_usage));
 		return CROS_GRALLOC_ERROR_UNSUPPORTED;
 	}
-
 	return mModule->driver->allocate(descriptor, outBufferHandle);
 }
 
@@ -347,17 +350,42 @@ int32_t CrosGralloc1::lock(
 	return ret;
 }
 
-int32_t CrosGralloc1::lockFlex(
-	buffer_handle_t /*bufferHandle*/,
-	gralloc1_producer_usage_t /*producerUsage*/,
-	gralloc1_consumer_usage_t /*consumerUsage*/,
-	const gralloc1_rect_t& /*accessRegion*/,
-	struct android_flex_layout* /*outData*/,
-	int32_t /*acquireFence*/)
+int32_t update_flex_layout( struct android_ycbcr* ycbcr, struct android_flex_layout* outData)
 {
-    // TODO
-    return CROS_GRALLOC_ERROR_UNSUPPORTED;
+       ycbcr = reinterpret_cast<struct android_flex_layout *>(outData);
+       return 0;
 }
+
+bool is_supported_yuv_format(){
+
+}
+
+int32_t CrosGralloc1::lockFlex(
+       buffer_handle_t bufferHandle,
+       gralloc1_producer_usage_t producerUsage,
+       gralloc1_consumer_usage_t consumerUsage,
+       const gralloc1_rect_t& accessRegion,
+       struct android_flex_layout* outData,
+       int32_t acquireFence)
+{
+       int32_t ret=-EINVAL;
+       int32_t outReleaseFence = 0;
+       struct android_ycbcr ycbcrData;
+
+       /*Check the format and for YUV format only use lockYCbCr*/
+       if(is_supported_yuv_format()) {
+
+           ret = lockYCbCr(bufferHandle, producerUsage, consumerUsage, \
+                          accessRegion, &ycbcrData, acquireFence);
+
+           /* convert the data in flex format*/
+           update_flex_layout( &ycbcrData, outData);
+
+           ret = unlock(bufferHandle, &outReleaseFence);
+       }
+       return ret;
+}
+
 
 int32_t CrosGralloc1::lockYCbCr(
 	buffer_handle_t bufferHandle,
@@ -510,8 +538,14 @@ int CrosGralloc1::HookDevOpen(const struct hw_module_t *mod,
 	ALOGE("Invalid module name- %s", name);
 	return -EINVAL;
     }
+    if(pCrosGralloc1 != NULL) {
+	*device = &pCrosGralloc1->common;
+	return 0;
+    }
+    else
+	pCrosGralloc1 = new CrosGralloc1();
 
-    std::unique_ptr<CrosGralloc1> ctx(new CrosGralloc1());
+    std::unique_ptr<CrosGralloc1> ctx(pCrosGralloc1);
     if (!ctx) {
 	ALOGE("Failed to allocate CrosGralloc1");
 	return -ENOMEM;
