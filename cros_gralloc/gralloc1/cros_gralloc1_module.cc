@@ -272,7 +272,8 @@ int32_t CrosGralloc1::allocate(
 		supported = mModule->driver->is_supported(descriptor);
 	}
 
-	if (!supported) {
+	if (!supported && !(usage & GRALLOC_USAGE_HW_CAMERA_READ)
+	    && !(usage & GRALLOC_USAGE_HW_CAMERA_WRITE)) {
 		cros_gralloc_error("Unsupported combination -- HAL format: %u, HAL flags: %u, "
 				   "drv_format: %4.4s, drv_flags: %llu",
 				   descriptor->droid_format, usage, reinterpret_cast<char *>(descriptor->drm_format),
@@ -377,6 +378,7 @@ int32_t CrosGralloc1::lockYCbCr(
 	}
 
 	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
+	    (hnd->droid_format != HAL_PIXEL_FORMAT_NV12) &&
 	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
 		cros_gralloc_error("Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;

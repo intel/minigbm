@@ -7,6 +7,14 @@
 #ifndef CROS_GRALLOC_TYPES_H
 #define CROS_GRALLOC_TYPES_H
 
+/*
+ * Android graphics.h defines the formats and leaves 0x100 - 0x1FF
+ * range available for HAL implementation specific formats.
+ */
+enum {
+       HAL_PIXEL_FORMAT_NV12 = 0x102,
+};
+
 typedef enum {
 	CROS_GRALLOC_ERROR_NONE = 0,
 	CROS_GRALLOC_ERROR_BAD_DESCRIPTOR = 1,
