@@ -26,7 +26,8 @@ static struct cros_gralloc_bo *cros_gralloc_bo_create(struct driver *drv,
 		combo = drv_get_combination(drv, drv_format, drv_usage);
 	}
 
-	if (!combo) {
+	if (!combo && !(usage & GRALLOC_USAGE_HW_CAMERA_READ)
+	    && !(usage & GRALLOC_USAGE_HW_CAMERA_WRITE)) {
 		cros_gralloc_error("Unsupported combination -- HAL format: %u, "
 				   "HAL flags: %u, drv_format: %4.4s, "
 				   "drv_flags: %llu", format, usage,

@@ -76,7 +76,7 @@ int32_t cros_gralloc_invert_format(int format)
 	case DRM_FORMAT_R8:
 		return HAL_PIXEL_FORMAT_BLOB;
 	default:
-		cros_gralloc_error("Unhandled DRM format %4.4s", reinterpret_cast<char *>(&format));
+		cros_gralloc_error("Unhandled DRM format %4.4s", reinterpret_cast<char *>(&format);
 		return 0;
 	}
 }
@@ -105,6 +105,8 @@ uint32_t cros_gralloc_convert_format(int format)
 		return DRM_FORMAT_FLEX_YCbCr_420_888;
 	case HAL_PIXEL_FORMAT_YV12:
 		return DRM_FORMAT_YVU420;
+        case HAL_PIXEL_FORMAT_NV12:
+                return DRM_FORMAT_FLEX_YCbCr_420_888;
 	}
 
 	return DRM_FORMAT_NONE;

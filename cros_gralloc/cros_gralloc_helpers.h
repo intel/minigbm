@@ -13,6 +13,14 @@
 #include <hardware/gralloc.h>
 #include <system/graphics.h>
 
+/*
+ * Android graphics.h defines the formats and leaves 0x100 - 0x1FF
+ * range available for HAL implementation specific formats.
+ */
+enum {
+       HAL_PIXEL_FORMAT_NV12 = 0x102,
+};
+
 /* Use these error codes derived from gralloc1 to make transition easier when
  * it happens
  */
