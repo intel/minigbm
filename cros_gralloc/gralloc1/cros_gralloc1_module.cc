@@ -275,8 +275,8 @@ int32_t CrosGralloc1::allocate(
 	if (!supported && !(usage & GRALLOC_USAGE_HW_CAMERA_READ)
 	    && !(usage & GRALLOC_USAGE_HW_CAMERA_WRITE)) {
 		cros_gralloc_error("Unsupported combination -- HAL format: %u, HAL flags: %u, "
-				   "drv_format: %4.4s, drv_flags: %llu",
-				   descriptor->droid_format, usage, reinterpret_cast<char *>(descriptor->drm_format),
+				   "drv_format: %u, drv_flags: %llu",
+				   descriptor->droid_format, usage, descriptor->drm_format,
 				   static_cast<unsigned long long>(descriptor->drv_usage));
 		return CROS_GRALLOC_ERROR_UNSUPPORTED;
 	}
