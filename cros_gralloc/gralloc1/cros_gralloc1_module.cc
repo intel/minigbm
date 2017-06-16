@@ -390,6 +390,7 @@ int32_t CrosGralloc1::lockFlex(
        }
 
        if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
+	    (hnd->droid_format != HAL_PIXEL_FORMAT_NV12) &&
 	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
 		cros_gralloc_error("lockFlex: Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
@@ -425,6 +426,7 @@ int32_t CrosGralloc1::lockYCbCr(
 	}
 
 	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
+	    (hnd->droid_format != HAL_PIXEL_FORMAT_NV12) &&
 	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
 		cros_gralloc_error("Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;

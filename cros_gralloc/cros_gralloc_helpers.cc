@@ -33,6 +33,8 @@ uint32_t cros_gralloc_convert_format(int format)
 		return DRM_FORMAT_FLEX_YCbCr_420_888;
 	case HAL_PIXEL_FORMAT_YV12:
 		return DRM_FORMAT_YVU420_ANDROID;
+	case HAL_PIXEL_FORMAT_NV12:
+		return DRM_FORMAT_NV12;
 	/*
 	 * Choose DRM_FORMAT_R8 because <system/graphics.h> requires the buffers
 	 * with a format HAL_PIXEL_FORMAT_BLOB have a height of 1, and width
