@@ -54,7 +54,7 @@ uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_
 		/*HACK: See b/30054495 */
 		usage |= BO_USE_SW_READ_OFTEN;
 	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_CAMERA)
-		usage |= BO_USE_HW_CAMERA_READ;
+                usage |= BO_USE_CAMERA_READ;
 	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_RENDERSCRIPT)
 		/* We use CPU for compute. */
 		usage |= BO_USE_LINEAR;
@@ -77,7 +77,7 @@ uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_
 	if (producer_flags & GRALLOC1_PRODUCER_USAGE_PROTECTED)
 		usage |= BO_USE_PROTECTED;
 	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CAMERA)
-		usage |= BO_USE_HW_CAMERA_WRITE;
+                usage |= BO_USE_CAMERA_WRITE;
 
 	return usage;
 }
@@ -394,6 +394,7 @@ int32_t CrosGralloc1::lockFlex(
        }
 
        if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
+	    (hnd->droid_format != HAL_PIXEL_FORMAT_NV12) &&
 	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
 		cros_gralloc_error("lockFlex: Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
@@ -427,6 +428,7 @@ int32_t CrosGralloc1::lockYCbCr(
 	}
 
 	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
+	    (hnd->droid_format != HAL_PIXEL_FORMAT_NV12) &&
 	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
 		cros_gralloc_error("Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
