@@ -481,6 +481,10 @@ static uint32_t i915_resolve_format(uint32_t format, uint32_t flags)
 		if ((flags & BO_USE_HW_CAMERA_WRITE) ||
 				(flags & BO_USE_HW_CAMERA_READ))
 			return DRM_FORMAT_NV12;
+
+		if (flags & BO_USE_TEXTURE)
+			return DRM_FORMAT_ABGR8888;
+
 		/*HACK: See b/28671744 */
 		return DRM_FORMAT_XBGR8888;
 	case DRM_FORMAT_FLEX_YCbCr_420_888:
