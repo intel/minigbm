@@ -148,17 +148,18 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	id = drv_bo_get_plane_handle(bo, 0).u32;
 	auto buffer = new cros_gralloc_buffer(id, bo, hnd);
 
-	std::lock_guard<std::mutex> lock(_mutex);
+	_mutex.lock();
 	_buffers[id] = buffer;
 	_handles[hnd] = std::make_pair(buffer, 1);
 	*out_handle = &hnd->base;
+	_mutex.unlock();
 	return CROS_GRALLOC_ERROR_NONE;
 }
 
 int32_t cros_gralloc_driver::retain(buffer_handle_t handle)
 {
 	uint32_t id;
-	std::lock_guard<std::mutex> lock(_mutex);
+	ScopedSpinLock lock(_mutex);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
@@ -214,7 +215,7 @@ int32_t cros_gralloc_driver::retain(buffer_handle_t handle)
 
 int32_t cros_gralloc_driver::release(buffer_handle_t handle)
 {
-	std::lock_guard<std::mutex> lock(_mutex);
+	ScopedSpinLock lock(_mutex);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
@@ -242,7 +243,7 @@ int32_t cros_gralloc_driver::release(buffer_handle_t handle)
 int32_t cros_gralloc_driver::map(buffer_handle_t handle, int32_t acquire_fence, uint64_t flags,
 				 void *addr[DRV_MAX_PLANES])
 {
-	std::lock_guard<std::mutex> lock(_mutex);
+	ScopedSpinLock lock(_mutex);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
@@ -265,7 +266,7 @@ int32_t cros_gralloc_driver::map(buffer_handle_t handle, int32_t acquire_fence, 
 
 int32_t cros_gralloc_driver::unmap(buffer_handle_t handle, int32_t *release_fence)
 {
-	std::lock_guard<std::mutex> lock(_mutex);
+	ScopedSpinLock lock(_mutex);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
@@ -285,7 +286,7 @@ int32_t cros_gralloc_driver::unmap(buffer_handle_t handle, int32_t *release_fenc
 
 int32_t cros_gralloc_driver::get_backing_store(buffer_handle_t handle, uint64_t *out_store)
 {
-	std::lock_guard<std::mutex> lock(_mutex);
+	ScopedSpinLock lock(_mutex);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {

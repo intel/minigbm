@@ -7,12 +7,17 @@
 #ifndef DRV_PRIV_H
 #define DRV_PRIV_H
 
-#include <pthread.h>
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <stdatomic.h>
 
 #include "drv.h"
+
+void atomic_lock(atomic_flag* lock);
+
+void atomic_unlock(atomic_flag* lock);
 
 struct bo {
 	struct driver *drv;
@@ -36,7 +41,7 @@ struct driver {
 	void *priv;
 	void *buffer_table;
 	void *map_table;
-	pthread_mutex_t driver_lock;
+	atomic_flag driver_lock;
 };
 
 struct kms_item {
