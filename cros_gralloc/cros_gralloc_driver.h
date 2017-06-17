@@ -9,8 +9,9 @@
 
 #include "cros_gralloc_buffer.h"
 
-#include <mutex>
 #include <unordered_map>
+
+#include "cros_gralloc_spinlock.h"
 
 class cros_gralloc_driver
 {
@@ -38,7 +39,7 @@ class cros_gralloc_driver
 	cros_gralloc_buffer *get_buffer(cros_gralloc_handle_t hnd);
 
 	struct driver *_drv;
-	std::mutex _mutex;
+	SpinLock _mutex;
 	std::unordered_map<uint32_t, cros_gralloc_buffer *> _buffers;
 	std::unordered_map<cros_gralloc_handle_t, std::pair<cros_gralloc_buffer *, int32_t>>
 	    _handles;

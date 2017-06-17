@@ -7,12 +7,25 @@
 #ifndef DRV_PRIV_H
 #define DRV_PRIV_H
 
-#include <pthread.h>
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <stdatomic.h>
 
 #include "drv.h"
+
+#ifndef DISABLE_LOCK
+#define ATOMIC_LOCK(X) \
+while (atomic_flag_test_and_set(X)) { \
+  }
+
+#define ATOMIC_UNLOCK(X) \
+  atomic_flag_clear(X);
+#else
+#define ATOMIC_LOCK(X) ((void)0)
+#define ATOMIC_UNLOCK(X) ((void)0)
+#endif
 
 struct bo {
 	struct driver *drv;
@@ -36,7 +49,7 @@ struct driver {
 	void *priv;
 	void *buffer_table;
 	void *map_table;
-	pthread_mutex_t driver_lock;
+	atomic_flag driver_lock;
 };
 
 struct kms_item {

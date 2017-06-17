@@ -6,7 +6,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -118,12 +117,9 @@ struct driver *drv_create(int fd)
 	if (!drv->backend)
 		goto free_driver;
 
-	if (pthread_mutex_init(&drv->driver_lock, NULL))
-		goto free_driver;
-
 	drv->buffer_table = drmHashCreate();
 	if (!drv->buffer_table)
-		goto free_lock;
+		goto free_driver;
 
 	drv->map_table = drmHashCreate();
 	if (!drv->map_table)
@@ -145,14 +141,14 @@ struct driver *drv_create(int fd)
 		}
 	}
 
+	ATOMIC_VAR_INIT(drv->driver_lock);
+
 	return drv;
 
 free_map_table:
 	drmHashDestroy(drv->map_table);
 free_buffer_table:
 	drmHashDestroy(drv->buffer_table);
-free_lock:
-	pthread_mutex_destroy(&drv->driver_lock);
 free_driver:
 	free(drv);
 	return NULL;
@@ -160,7 +156,7 @@ free_driver:
 
 void drv_destroy(struct driver *drv)
 {
-	pthread_mutex_lock(&drv->driver_lock);
+	ATOMIC_LOCK(&drv->driver_lock);
 
 	if (drv->backend->close)
 		drv->backend->close(drv);
@@ -170,8 +166,7 @@ void drv_destroy(struct driver *drv)
 
 	free(drv->backend->combos.data);
 
-	pthread_mutex_unlock(&drv->driver_lock);
-	pthread_mutex_destroy(&drv->driver_lock);
+	ATOMIC_UNLOCK(&drv->driver_lock);
 
 	free(drv);
 }
@@ -247,12 +242,12 @@ struct bo *drv_bo_create(struct driver *drv, uint32_t width, uint32_t height, ui
 		return NULL;
 	}
 
-	pthread_mutex_lock(&drv->driver_lock);
+	ATOMIC_LOCK(&drv->driver_lock);;
 
 	for (plane = 0; plane < bo->num_planes; plane++)
 		drv_increment_reference_count(drv, bo, plane);
 
-	pthread_mutex_unlock(&drv->driver_lock);
+	ATOMIC_UNLOCK(&drv->driver_lock);
 
 	return bo;
 }
@@ -281,12 +276,12 @@ struct bo *drv_bo_create_with_modifiers(struct driver *drv, uint32_t width, uint
 		return NULL;
 	}
 
-	pthread_mutex_lock(&drv->driver_lock);
+	ATOMIC_LOCK(&drv->driver_lock);;
 
 	for (plane = 0; plane < bo->num_planes; plane++)
 		drv_increment_reference_count(drv, bo, plane);
 
-	pthread_mutex_unlock(&drv->driver_lock);
+	ATOMIC_UNLOCK(&drv->driver_lock);
 
 	return bo;
 }
@@ -297,7 +292,7 @@ void drv_bo_destroy(struct bo *bo)
 	uintptr_t total = 0;
 	struct driver *drv = bo->drv;
 
-	pthread_mutex_lock(&drv->driver_lock);
+	ATOMIC_LOCK(&drv->driver_lock);;
 
 	for (plane = 0; plane < bo->num_planes; plane++)
 		drv_decrement_reference_count(drv, bo, plane);
@@ -305,7 +300,7 @@ void drv_bo_destroy(struct bo *bo)
 	for (plane = 0; plane < bo->num_planes; plane++)
 		total += drv_get_reference_count(drv, bo, plane);
 
-	pthread_mutex_unlock(&drv->driver_lock);
+	ATOMIC_UNLOCK(&drv->driver_lock);
 
 	if (total == 0)
 		bo->drv->backend->bo_destroy(bo);
@@ -354,7 +349,7 @@ void *drv_bo_map(struct bo *bo, uint32_t x, uint32_t y, uint32_t width, uint32_t
 	assert(x + width <= drv_bo_get_width(bo));
 	assert(y + height <= drv_bo_get_height(bo));
 
-	pthread_mutex_lock(&bo->drv->driver_lock);
+	ATOMIC_LOCK(&bo->drv->driver_lock);
 
 	if (!drmHashLookup(bo->drv->map_table, bo->handles[plane].u32, &ptr)) {
 		data = (struct map_info *)ptr;
@@ -367,7 +362,7 @@ void *drv_bo_map(struct bo *bo, uint32_t x, uint32_t y, uint32_t width, uint32_t
 	if (addr == MAP_FAILED) {
 		*map_data = NULL;
 		free(data);
-		pthread_mutex_unlock(&bo->drv->driver_lock);
+		ATOMIC_UNLOCK(&bo->drv->driver_lock);
 		return MAP_FAILED;
 	}
 
@@ -382,7 +377,7 @@ success:
 	offset += drv_stride_from_format(bo->format, x, plane);
 	addr = (uint8_t *)data->addr;
 	addr += drv_bo_get_plane_offset(bo, plane) + offset;
-	pthread_mutex_unlock(&bo->drv->driver_lock);
+	ATOMIC_UNLOCK(&bo->drv->driver_lock);
 
 	return (void *)addr;
 }
@@ -394,7 +389,7 @@ int drv_bo_unmap(struct bo *bo, struct map_info *data)
 	assert(data);
 	assert(data->refcount >= 0);
 
-	pthread_mutex_lock(&bo->drv->driver_lock);
+	ATOMIC_LOCK(&bo->drv->driver_lock);
 
 	if (!--data->refcount) {
 		if (bo->drv->backend->bo_unmap)
@@ -405,7 +400,7 @@ int drv_bo_unmap(struct bo *bo, struct map_info *data)
 		free(data);
 	}
 
-	pthread_mutex_unlock(&bo->drv->driver_lock);
+	ATOMIC_UNLOCK(&bo->drv->driver_lock);;
 
 	return ret;
 }
