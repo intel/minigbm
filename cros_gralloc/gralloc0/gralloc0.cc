@@ -14,7 +14,7 @@ struct gralloc0_module {
 	std::unique_ptr<alloc_device_t> alloc;
 	std::unique_ptr<cros_gralloc_driver> driver;
 	bool initialized;
-	std::mutex initialization_mutex;
+	SpinLock initialization_mutex;
 };
 
 /* This enumeration must match the one in <gralloc_drm.h>.
@@ -143,7 +143,7 @@ static int gralloc0_close(struct hw_device_t *dev)
 
 static int gralloc0_init(struct gralloc0_module *mod, bool initialize_alloc)
 {
-	std::lock_guard<std::mutex> lock(mod->initialization_mutex);
+	SCOPED_SPIN_LOCK(mod->initialization_mutex);
 
 	if (mod->initialized)
 		return 0;
