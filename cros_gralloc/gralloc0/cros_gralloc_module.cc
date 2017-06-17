@@ -97,7 +97,8 @@ static int cros_gralloc_alloc(alloc_device_t *dev, int w, int h, int format, int
 		supported = mod->driver->is_supported(&descriptor);
 	}
 
-	if (!supported) {
+	if (!supported  && !(usage & GRALLOC_USAGE_HW_CAMERA_READ)
+	    && !(usage & GRALLOC_USAGE_HW_CAMERA_WRITE)) {
 		cros_gralloc_error("Unsupported combination -- HAL format: %u, HAL flags: %u, "
 				   "drv_format: %u, drv_flags: %llu",
 				   format, usage, reinterpret_cast<char *>(descriptor.drm_format),
