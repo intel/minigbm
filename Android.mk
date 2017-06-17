@@ -49,6 +49,11 @@ LOCAL_CFLAGS += -DDRV_I915
 LOCAL_SHARED_LIBRARIES += libdrm_intel
 endif
 
+ifeq ($(strip $(BOARD_USES_GRALLOC1)), true)
+LOCAL_CPPFLAGS += -DDISABLE_LOCK
+LOCAL_CFLAGS += -DDISABLE_LOCK
+endif
+
 LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 # The preferred path for vendor HALs is /vendor/lib/hw
