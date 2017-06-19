@@ -312,12 +312,16 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 	struct drm_i915_gem_set_tiling gem_set_tiling;
 	struct i915_device *i915_dev = (struct i915_device *)bo->drv->priv;
 
+#if 0
 	if (flags & (BO_USE_CURSOR | BO_USE_LINEAR | BO_USE_SW_READ_OFTEN | BO_USE_SW_WRITE_OFTEN))
 		bo->tiling = I915_TILING_NONE;
 	else if (flags & BO_USE_SCANOUT)
 		bo->tiling = I915_TILING_X;
 	else
 		bo->tiling = I915_TILING_Y;
+#else
+	bo->tiling = I915_TILING_NONE;
+#endif
 
 	stride = drv_stride_from_format(format, width, 0);
 	/*
