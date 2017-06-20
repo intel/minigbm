@@ -94,10 +94,11 @@ static int i915_add_combinations(struct driver *drv)
 	uint32_t i, num_items;
 	struct kms_item *items;
 	struct format_metadata metadata;
-	uint64_t render_flags, texture_flags;
+	uint64_t render_flags, texture_flags, camera_flags;
 
 	render_flags = BO_USE_RENDER_MASK;
 	texture_flags = BO_USE_TEXTURE_MASK;
+	camera_flags = BO_USE_CAMERA_MASK;
 
 	metadata.tiling = I915_TILING_NONE;
 	metadata.priority = 1;
@@ -116,6 +117,10 @@ static int i915_add_combinations(struct driver *drv)
 	ret = drv_add_combinations(drv, tileable_texture_source_formats,
 				   ARRAY_SIZE(tileable_texture_source_formats), &metadata,
 				   texture_flags);
+	if (ret)
+		return ret;
+
+	ret = drv_add_combination(drv, DRM_FORMAT_NV12, &metadata, camera_flags);
 	if (ret)
 		return ret;
 
