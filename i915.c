@@ -21,19 +21,21 @@
 #define I915_CACHELINE_SIZE 64
 #define I915_CACHELINE_MASK (I915_CACHELINE_SIZE - 1)
 
-static const uint32_t render_target_formats[] = { DRM_FORMAT_ABGR8888, DRM_FORMAT_ARGB1555,
-						  DRM_FORMAT_ARGB8888, DRM_FORMAT_RGB565,
+static const uint32_t render_target_formats[] = { DRM_FORMAT_ABGR8888,    DRM_FORMAT_ARGB1555,
+						  DRM_FORMAT_ARGB8888,    DRM_FORMAT_RGB565,
 						  DRM_FORMAT_XBGR2101010, DRM_FORMAT_XBGR8888,
-						  DRM_FORMAT_XRGB1555, DRM_FORMAT_XRGB2101010,
+						  DRM_FORMAT_XRGB1555,    DRM_FORMAT_XRGB2101010,
 						  DRM_FORMAT_XRGB8888 };
 
-static const uint32_t tileable_texture_source_formats[] = { DRM_FORMAT_GR88, DRM_FORMAT_NV12,
-							    DRM_FORMAT_R8, DRM_FORMAT_UYVY,
-							    DRM_FORMAT_YUYV, DRM_FORMAT_YVYU, DRM_FORMAT_VYUY };
+static const uint32_t tileable_texture_source_formats[] = { DRM_FORMAT_GR88, DRM_FORMAT_R8,
+							    DRM_FORMAT_UYVY, DRM_FORMAT_YUYV,
+							    DRM_FORMAT_YVYU, DRM_FORMAT_VYUY };
 
-static const uint32_t texture_source_formats[] = { DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID };
+static const uint32_t texture_source_formats[] = { DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID,
+						   DRM_FORMAT_NV12 };
 
-struct i915_device {
+struct i915_device
+{
 	uint32_t gen;
 	int32_t has_llc;
 	uint64_t cursor_width;
@@ -569,10 +571,16 @@ static uint32_t i915_resolve_format(uint32_t format, uint64_t use_flags)
 		/*HACK: See b/28671744 */
 		return DRM_FORMAT_XBGR8888;
 	case DRM_FORMAT_FLEX_YCbCr_420_888:
-		/* KBL camera subsystem requires NV12. */
-		if (use_flags & (BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE))
-			return DRM_FORMAT_NV12;
-		return DRM_FORMAT_YVU420;
+		/*
+		 * KBL camera subsystem requires NV12. Our other use cases
+		 * don't care:
+		 * - Hardware video supports NV12,
+		 * - USB Camera HALv3 supports NV12,
+		 * - USB Camera HALv1 doesn't use this format.
+		 * Moreover, NV12 is preferred for video, due to overlay
+		 * support on SKL+.
+		 */
+		return DRM_FORMAT_NV12;
 	default:
 		return format;
 	}
