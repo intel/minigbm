@@ -9,6 +9,7 @@
 
 #include <cstdlib>
 #include <fcntl.h>
+#include <sync/sync.h>
 #include <xf86drm.h>
 
 cros_gralloc_driver::cros_gralloc_driver() : drv_(nullptr)
@@ -236,8 +237,33 @@ int32_t cros_gralloc_driver::release(buffer_handle_t handle)
 int32_t cros_gralloc_driver::lock(buffer_handle_t handle, int32_t acquire_fence, uint64_t flags,
 				  uint8_t *addr[DRV_MAX_PLANES])
 {
-	std::lock_guard<std::mutex> lock(mutex_);
+	if (acquire_fence >= 0) {
+		/*
+		 * Wait initially for 1 second, and then wait indefinitely. The SYNC_IOC_WAIT
+		 * documentation states the caller waits indefinitely on the fence if
+		 * timeout < 0.
+		 */
+		int err, timeout;
+		timeout = 1000;
+		err = sync_wait(acquire_fence, timeout);
+		if (err < 0) {
+			cros_gralloc_error("Timed out on sync wait, err = %s", strerror(errno));
+			timeout = -1;
+			err = sync_wait(acquire_fence, timeout);
+			if (err < 0) {
+				cros_gralloc_error("sync wait error = %s", strerror(errno));
+				return CROS_GRALLOC_ERROR_UNSUPPORTED;
+			}
+		}
 
+		err = close(acquire_fence);
+		if (err) {
+			cros_gralloc_error("Unable to close fence fd, err = %s", strerror(errno));
+			return CROS_GRALLOC_ERROR_UNSUPPORTED;
+		}
+	}
+
+	std::lock_guard<std::mutex> lock(mutex_);
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
 		cros_gralloc_error("Invalid handle.");
@@ -250,15 +276,10 @@ int32_t cros_gralloc_driver::lock(buffer_handle_t handle, int32_t acquire_fence,
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if (acquire_fence >= 0) {
-		cros_gralloc_error("Sync wait not yet supported.");
-		return CROS_GRALLOC_ERROR_UNSUPPORTED;
-	}
-
 	return buffer->lock(flags, addr);
 }
 
-int32_t cros_gralloc_driver::unlock(buffer_handle_t handle)
+int32_t cros_gralloc_driver::unlock(buffer_handle_t handle, int32_t *release_fence)
 {
 	std::lock_guard<std::mutex> lock(mutex_);
 
@@ -274,6 +295,13 @@ int32_t cros_gralloc_driver::unlock(buffer_handle_t handle)
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
+	/*
+	 * From the ANativeWindow::dequeueBuffer documentation:
+	 *
+	 * "A value of -1 indicates that the caller may access the buffer immediately without
+	 * waiting on a fence."
+	 */
+	*release_fence = -1;
 	return buffer->unlock();
 }
 
