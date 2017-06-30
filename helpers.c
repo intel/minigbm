@@ -136,7 +136,6 @@ int drv_bo_from_format(struct bo *bo, uint32_t stride, uint32_t aligned_height, 
 {
 
 	size_t p, num_planes;
-	uint32_t offset = 0;
 
 	num_planes = drv_num_planes_from_format(format);
 	assert(num_planes);
@@ -145,8 +144,7 @@ int drv_bo_from_format(struct bo *bo, uint32_t stride, uint32_t aligned_height, 
 	for (p = 0; p < num_planes; p++) {
 		bo->strides[p] = subsample_stride(stride, format, p);
 		bo->sizes[p] = drv_size_from_format(format, bo->strides[p], bo->height, p);
-		bo->offsets[p] = offset;
-		offset += bo->sizes[p];
+		bo->offsets[p] = bo->total_size;
 		bo->total_size += drv_size_from_format(format, bo->strides[p], aligned_height, p);
 	}
 
