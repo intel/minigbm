@@ -586,6 +586,11 @@ int CrosGralloc1::HookDevOpen(const struct hw_module_t *mod,
 
 // static
 int CrosGralloc1::HookDevClose(hw_device_t * /*dev*/) {
+    if (pCrosGralloc1) {
+      delete pCrosGralloc1;
+      pCrosGralloc1 = NULL;
+    }
+
     return 0;
 }
 
