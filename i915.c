@@ -42,6 +42,8 @@ static const uint32_t tileable_texture_source_formats[] = { DRM_FORMAT_GR88, DRM
 
 static const uint32_t texture_source_formats[] = { DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID };
 
+static const uint32_t camera_formats[] = { DRM_FORMAT_R8, DRM_FORMAT_NV12 };
+
 struct i915_device {
 	uint32_t gen;
 	int32_t has_llc;
@@ -120,7 +122,8 @@ static int i915_add_combinations(struct driver *drv)
 	if (ret)
 		return ret;
 
-	ret = drv_add_combination(drv, DRM_FORMAT_NV12, &metadata, camera_flags);
+	ret = drv_add_combinations(drv, camera_formats, ARRAY_SIZE(camera_formats), &metadata,
+				   camera_flags);
 	if (ret)
 		return ret;
 
