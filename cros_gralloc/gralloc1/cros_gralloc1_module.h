@@ -28,10 +28,6 @@ struct cros_gralloc_module;
 
 namespace android {
 
-struct cros_gralloc1_module {
-	std::unique_ptr<cros_gralloc_driver> driver;
-};
-
 class CrosGralloc1  : public gralloc1_device_t
 {
 public:
@@ -273,7 +269,7 @@ private:
     }
 
     // Adapter internals
-    struct cros_gralloc1_module * mModule;
+    std::unique_ptr<cros_gralloc_driver> driver;
 };
 
 } // namespace android

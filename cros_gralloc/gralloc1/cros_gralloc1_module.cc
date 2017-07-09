@@ -87,34 +87,26 @@ namespace android {
 /* CrosGralloc1 is a Singleton and pCrosGralloc1 holds pointer to its instance*/
 static CrosGralloc1 *pCrosGralloc1 = NULL;
 
-
 CrosGralloc1::CrosGralloc1 ()
 {
-    ALOGV("Constructing");
     getCapabilities = getCapabilitiesHook;
     getFunction = getFunctionHook;
     common.tag = HARDWARE_DEVICE_TAG;
     common.version = HARDWARE_MODULE_API_VERSION(1, 0);
     common.close = HookDevClose;
-    mModule = new struct cros_gralloc1_module();
 }
 
 CrosGralloc1::~CrosGralloc1 ()
 {
-    ALOGV("Destructing");
-    if (mModule->driver)
-        mModule->driver.reset(nullptr);
-
-    delete mModule;
 }
 
 bool CrosGralloc1::Init()
 {
-    if (mModule->driver)
+    if (driver)
         return true;
 
-    mModule->driver = std::make_unique<cros_gralloc_driver>();
-    if (mModule->driver->init()) {
+    driver = std::make_unique<cros_gralloc_driver>();
+    if (driver->init()) {
 	cros_gralloc_error("Failed to initialize driver.");
 	return false;
     }
@@ -171,7 +163,7 @@ gralloc1_function_pointer_t CrosGralloc1 ::doGetFunction(
 	case GRALLOC1_FUNCTION_GET_STRIDE:
 	    return asFP<GRALLOC1_PFN_GET_STRIDE>(getStrideHook);
 	case GRALLOC1_FUNCTION_ALLOCATE:
-	    if (mModule != nullptr) {
+            if (driver) {
 		return asFP<GRALLOC1_PFN_ALLOCATE>(allocateBuffers);
 	    } else {
 		return nullptr;
@@ -270,10 +262,10 @@ int32_t CrosGralloc1::allocate(
 	uint64_t usage = cros_gralloc1_convert_flags(descriptor->producer_usage,
 						     descriptor->consumer_usage);
 	descriptor->drv_usage = usage;
-	bool supported = mModule->driver->is_supported(descriptor);
+        bool supported = driver->is_supported(descriptor);
 	if (!supported && (descriptor->consumer_usage & GRALLOC1_CONSUMER_USAGE_HWCOMPOSER)) {
 		descriptor->drv_usage &= ~BO_USE_SCANOUT;
-		supported = mModule->driver->is_supported(descriptor);
+                supported = driver->is_supported(descriptor);
 	}
 
 	if (!supported) {
@@ -283,7 +275,7 @@ int32_t CrosGralloc1::allocate(
 				   static_cast<unsigned long long>(descriptor->drv_usage));
 		return CROS_GRALLOC_ERROR_UNSUPPORTED;
 	}
-	return mModule->driver->allocate(descriptor, outBufferHandle);
+        return driver->allocate(descriptor, outBufferHandle);
 }
 
 int32_t CrosGralloc1::allocateBuffers(
@@ -312,12 +304,12 @@ int32_t CrosGralloc1::allocateBuffers(
 
 int32_t CrosGralloc1::retain(buffer_handle_t bufferHandle)
 {
-    return mModule->driver->retain(bufferHandle);
+    return driver->retain(bufferHandle);
 }
 
 int32_t CrosGralloc1::release(buffer_handle_t bufferHandle)
 {
-    return mModule->driver->release(bufferHandle);
+    return driver->release(bufferHandle);
 }
 
 int32_t CrosGralloc1::lock(
@@ -344,7 +336,7 @@ int32_t CrosGralloc1::lock(
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	ret = mModule->driver->map(bufferHandle, acquireFence, flags, addr);
+        ret = driver->map(bufferHandle, acquireFence, flags, addr);
 	*outData = addr[0];
 
 	return ret;
@@ -434,7 +426,7 @@ int32_t CrosGralloc1::lockYCbCr(
 
 	flags = cros_gralloc1_convert_flags(producerUsage,
 					    consumerUsage);
-	ret = mModule->driver->map(bufferHandle, acquireFence, flags, addr);
+        ret = driver->map(bufferHandle, acquireFence, flags, addr);
 
 	switch (hnd->format) {
 	case DRM_FORMAT_NV12:
@@ -464,7 +456,7 @@ int32_t CrosGralloc1::unlock(
 	buffer_handle_t bufferHandle,
 	int32_t* outReleaseFence)
 {
-	return mModule->driver->unmap(bufferHandle, outReleaseFence);
+        return driver->unmap(bufferHandle, outReleaseFence);
 }
 
 
@@ -491,7 +483,7 @@ int32_t CrosGralloc1::getBackingStore(buffer_handle_t buffer, gralloc1_backing_s
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	return mModule->driver->get_backing_store(buffer, outStore);
+        return driver->get_backing_store(buffer, outStore);
 }
 
 int32_t CrosGralloc1::getConsumerUsage(buffer_handle_t buffer,
@@ -560,6 +552,7 @@ int CrosGralloc1::HookDevOpen(const struct hw_module_t *mod,
 	ALOGE("Invalid module name- %s", name);
 	return -EINVAL;
     }
+
     if(pCrosGralloc1 != NULL) {
 	*device = &pCrosGralloc1->common;
 	return 0;
