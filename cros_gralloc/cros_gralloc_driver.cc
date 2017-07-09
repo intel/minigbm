@@ -242,6 +242,31 @@ int32_t cros_gralloc_driver::release(buffer_handle_t handle)
 int32_t cros_gralloc_driver::map(buffer_handle_t handle, int32_t acquire_fence, uint64_t flags,
 				 void *addr[DRV_MAX_PLANES])
 {
+        if (acquire_fence >= 0) {
+            /*
+             * Wait initially for 1 second, and then wait indefinitely. The SYNC_IOC_WAIT
+             * documentation states the caller waits indefinitely on the fence if timeout < 0.
+             */
+            int err, timeout;
+            timeout = 1000;
+            err = sync_wait(acquire_fence, timeout);
+            if (err < 0) {
+                    cros_gralloc_error("Timed out on sync wait, err = %s", strerror(errno));
+                    timeout = -1;
+                    err = sync_wait(acquire_fence, timeout);
+                    if (err < 0) {
+                            cros_gralloc_error("sync wait error = %s", strerror(errno));
+                            return CROS_GRALLOC_ERROR_UNSUPPORTED;
+                    }
+            }
+
+            err = close(acquire_fence);
+            if (err) {
+                    cros_gralloc_error("Unable to close fence fd, err = %s", strerror(errno));
+                    return CROS_GRALLOC_ERROR_UNSUPPORTED;
+            }
+        }
+
 	SCOPED_SPIN_LOCK(_mutex);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
@@ -254,10 +279,6 @@ int32_t cros_gralloc_driver::map(buffer_handle_t handle, int32_t acquire_fence, 
 	if (!buffer) {
 		cros_gralloc_error("Invalid Reference.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
-	}
-
-	if (acquire_fence >= 0) {
-		sync_wait(acquire_fence, -1);
 	}
 
 	return buffer->map(flags, addr);
