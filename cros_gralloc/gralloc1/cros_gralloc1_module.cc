@@ -86,6 +86,8 @@ namespace android {
 
 /* CrosGralloc1 is a Singleton and pCrosGralloc1 holds pointer to its instance*/
 static CrosGralloc1 *pCrosGralloc1 = NULL;
+static uint32_t ref_count = 0;
+static SpinLock global_lock_;
 
 CrosGralloc1::CrosGralloc1 ()
 {
@@ -553,6 +555,9 @@ int CrosGralloc1::HookDevOpen(const struct hw_module_t *mod,
 	return -EINVAL;
     }
 
+    ScopedSpinLock lock(global_lock_);
+    ref_count++;
+
     if(pCrosGralloc1 != NULL) {
 	*device = &pCrosGralloc1->common;
 	return 0;
@@ -579,6 +584,15 @@ int CrosGralloc1::HookDevOpen(const struct hw_module_t *mod,
 
 // static
 int CrosGralloc1::HookDevClose(hw_device_t * /*dev*/) {
+    ScopedSpinLock lock(global_lock_);
+    if (ref_count > 0) {
+        ref_count--;
+    }
+
+    if (ref_count > 0) {
+        return 0;
+    }
+
     if (pCrosGralloc1) {
       delete pCrosGralloc1;
       pCrosGralloc1 = NULL;
