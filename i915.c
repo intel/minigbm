@@ -37,8 +37,7 @@ static const uint32_t render_target_formats[] = { DRM_FORMAT_ARGB1555, DRM_FORMA
 						  DRM_FORMAT_XRGB8888 };
 
 static const uint32_t tileable_texture_source_formats[] = { DRM_FORMAT_GR88, DRM_FORMAT_R8,
-							    DRM_FORMAT_UYVY, DRM_FORMAT_YUYV,
-                                                            DRM_FORMAT_NV12 };
+							    DRM_FORMAT_UYVY, DRM_FORMAT_YUYV, DRM_FORMAT_NV12 };
 
 static const uint32_t texture_source_formats[] = { DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID };
 
@@ -167,6 +166,9 @@ static int i915_add_combinations(struct driver *drv)
 	if (ret)
 		return ret;
 
+	// todo: Chromium require BO_USE_RENDERING but consider to remove it later
+	drv_modify_combination(drv, DRM_FORMAT_NV12, &metadata, BO_USE_SCANOUT | BO_USE_RENDERING);
+
 	items = drv_query_kms(drv, &num_items);
 	if (!items || !num_items)
 		return 0;
@@ -206,40 +208,41 @@ static void get_preferred_cursor_attributes(uint32_t drm_fd,
 }
 
 static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *stride,
-				 uint32_t *aligned_height)
+				 uint32_t *aligned_height, uint32_t *horizontal_alignment,
+				 uint32_t *vertical_alignment)
 {
 	struct i915_device *i915 = bo->drv->priv;
-	uint32_t horizontal_alignment = 4;
-	uint32_t vertical_alignment = 4;
+	*horizontal_alignment = 4;
+	*vertical_alignment = 4;
 
 	switch (tiling) {
 	default:
 	case I915_TILING_NONE:
-		horizontal_alignment = 64;
+		*horizontal_alignment = 64;
 		break;
 
 	case I915_TILING_X:
-		horizontal_alignment = 512;
-		vertical_alignment = 8;
+		*horizontal_alignment = 512;
+		*vertical_alignment = 8;
 		break;
 
 	case I915_TILING_Y:
 		if (i915->gen == 3) {
-			horizontal_alignment = 512;
-			vertical_alignment = 8;
+			*horizontal_alignment = 512;
+			*vertical_alignment = 8;
 		} else {
-			horizontal_alignment = 128;
-			vertical_alignment = 32;
+			*horizontal_alignment = 128;
+			*vertical_alignment = 32;
 		}
 		break;
 	}
 
-	*aligned_height = ALIGN(bo->height, vertical_alignment);
+	*aligned_height = ALIGN(bo->height, *vertical_alignment);
 	if (i915->gen > 3) {
-		*stride = ALIGN(*stride, horizontal_alignment);
+		*stride = ALIGN(*stride, *horizontal_alignment);
 	} else {
 		while (*stride > horizontal_alignment)
-			horizontal_alignment <<= 1;
+			*horizontal_alignment <<= 1;
 
 		*stride = horizontal_alignment;
 	}
@@ -259,6 +262,37 @@ static void i915_clflush(void *start, size_t size)
 	while (p < end) {
 		__builtin_ia32_clflush(p);
 		p = (void *)((uintptr_t)p + I915_CACHELINE_SIZE);
+	}
+}
+
+static void i915_calculate_planessize(struct bo *bo, uint32_t h_align, uint32_t v_align)
+{
+
+	uint32_t offset = 0;
+	uint32_t vertical_subsampling;
+	uint32_t format = bo->format;
+	size_t p;
+
+	bo->total_size = 0;
+	for (p = 0; p < bo->num_planes; p++) {
+		bo->strides[p] = h_align * DIV_ROUND_UP(bo->strides[p], h_align);
+		switch (format) {
+		case DRM_FORMAT_NV12:
+		case DRM_FORMAT_YVU420:
+		case DRM_FORMAT_YVU420_ANDROID:
+			vertical_subsampling = (p == 0) ? 1 : 2;
+			break;
+		default:
+			vertical_subsampling = 1;
+		}
+
+		bo->sizes[p] =
+		    bo->strides[p] *
+		    (v_align *
+		     DIV_ROUND_UP(DIV_ROUND_UP(bo->height, vertical_subsampling), v_align));
+		bo->offsets[p] = offset;
+		offset += bo->sizes[p];
+		bo->total_size += bo->sizes[p];
 	}
 }
 
@@ -307,7 +341,7 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 {
 	int ret;
 	size_t plane;
-	uint32_t stride;
+	uint32_t stride, h_align, v_align;
 	struct drm_i915_gem_create gem_create;
 	struct drm_i915_gem_set_tiling gem_set_tiling;
 	struct i915_device *i915_dev = (struct i915_device *)bo->drv->priv;
@@ -338,7 +372,7 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 	    height = ALIGN(height, i915_dev->cursor_height);
 	    stride = drv_stride_from_format(format, width, 0);
 	} else {
-	    ret = i915_align_dimensions(bo, bo->tiling, &stride, &height);
+	    ret = i915_align_dimensions(bo, bo->tiling, &stride, &height, &h_align, &v_align);
 	    if (ret)
 		return ret;
 	}
@@ -350,6 +384,14 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 	bo->height = height;
 
 	drv_bo_from_format(bo, stride, height, format);
+
+	/*
+	 * drv_bo_from_format does not considerate the alignment for planes
+	 * recalculate the size of planes according to alignment
+	 */
+	if (format == DRM_FORMAT_NV12 || format == DRM_FORMAT_YVU420 ||
+	    format == DRM_FORMAT_YVU420_ANDROID)
+		i915_calculate_planessize(bo, h_align, v_align);
 
 	memset(&gem_create, 0, sizeof(gem_create));
 	gem_create.size = bo->total_size;
