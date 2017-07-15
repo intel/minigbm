@@ -541,6 +541,10 @@ static uint32_t i915_resolve_format(uint32_t format, uint64_t usage)
 		/* KBL camera subsystem requires NV12. */
 		if (usage & (BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE))
 			return DRM_FORMAT_NV12;
+
+		if (usage & BO_USE_TEXTURE)
+			return DRM_FORMAT_ABGR8888;
+
 		/*HACK: See b/28671744 */
 		return DRM_FORMAT_XBGR8888;
 	case DRM_FORMAT_FLEX_YCbCr_420_888:
