@@ -18,6 +18,7 @@ constexpr uint32_t cros_gralloc_magic = 0xABCDDCBA;
 constexpr uint32_t handle_data_size =
     ((sizeof(struct cros_gralloc_handle) - offsetof(cros_gralloc_handle, fds[0])) / sizeof(int));
 
+const char *drmFormat2Str(int format);
 uint32_t cros_gralloc_convert_format(int32_t format);
 int32_t cros_gralloc_invert_format(int format);
 
