@@ -272,8 +272,9 @@ int32_t CrosGralloc1::allocate(
 
 	if (!supported) {
 		cros_gralloc_error("Unsupported combination -- HAL format: %u, HAL flags: %u, "
-                                  "drv_format: %u, drv_flags: %llu",
-                                   descriptor->droid_format, usage, descriptor->drm_format,
+                                  "drv_format: %4.4s, drv_flags: %llu",
+                                   descriptor->droid_format, usage,
+                                   drmFormat2Str(descriptor->drm_format),
 				   static_cast<unsigned long long>(descriptor->drv_usage));
 		return CROS_GRALLOC_ERROR_UNSUPPORTED;
 	}

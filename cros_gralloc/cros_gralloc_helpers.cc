@@ -9,6 +9,15 @@
 #include <cstdlib>
 #include <cutils/log.h>
 
+const char* drmFormat2Str(int drm_format)
+{
+    static char buf[5];
+    char *pDrmFormat = (char*) &drm_format;
+    snprintf(buf, sizeof(buf), "%c%c%c%c", *pDrmFormat, *(pDrmFormat + 1),
+             *(pDrmFormat + 2), *(pDrmFormat + 3));
+    return buf;
+}
+
 uint32_t cros_gralloc_convert_format(int format)
 {
 	/*
@@ -70,7 +79,8 @@ int32_t cros_gralloc_invert_format(int format)
         case DRM_FORMAT_R8:
                 return HAL_PIXEL_FORMAT_BLOB;
         default:
-                cros_gralloc_error("Unhandled DRM format %u", format);
+                cros_gralloc_error("Unhandled DRM format %4.4s",
+                                   drmFormat2Str(format));
                 return 0;
         }
 }
