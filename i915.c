@@ -317,6 +317,7 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 	int ret;
 	size_t plane;
 	uint32_t stride;
+	uint32_t padding = 0;
 	struct drm_i915_gem_create gem_create;
 	struct drm_i915_gem_set_tiling gem_set_tiling;
 	struct i915_device *i915_dev = (struct i915_device *)bo->drv->priv;
@@ -366,7 +367,14 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 	drv_bo_from_format(bo, stride, height, format);
 
 	memset(&gem_create, 0, sizeof(gem_create));
-	gem_create.size = bo->total_size;
+
+	/* For linear surfaces, additional 64 bytes is required at the bottom
+	 * of the surface.
+	 */
+	if (bo->tiling == I915_TILING_NONE)
+		padding = 64;
+
+	gem_create.size = bo->total_size + padding;
 
 	ret = drmIoctl(bo->drv->fd, DRM_IOCTL_I915_GEM_CREATE, &gem_create);
 	if (ret) {
