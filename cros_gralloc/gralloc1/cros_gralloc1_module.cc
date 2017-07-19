@@ -397,8 +397,6 @@ int32_t CrosGralloc1::lockFlex(
        /* convert the data in flex format*/
        update_flex_layout( &ycbcrData, outData);
 
-       ret = unlock(bufferHandle, &outReleaseFence);
-
        return ret;
 }
 
