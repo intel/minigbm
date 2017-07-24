@@ -8,7 +8,7 @@
 
 #include <errno.h>
 #include <i915_drm.h>
-#include <stdio.h>
+#include <intel_bufmgr.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <xf86drm.h>
@@ -30,10 +30,15 @@ static const uint32_t tileable_texture_source_formats[] = { DRM_FORMAT_GR88, DRM
 static const uint32_t texture_source_formats[] = { DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID };
 
 struct i915_device {
-	uint32_t gen;
-	int32_t has_llc;
+	int gen;
+	drm_intel_bufmgr *mgr;
+	uint32_t count;
 	uint64_t cursor_width;
 	uint64_t cursor_height;
+};
+
+struct i915_bo {
+	drm_intel_bo *ibos[DRV_MAX_PLANES];
 };
 
 static int get_gen(int device_id)
@@ -246,14 +251,14 @@ static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *strid
 
 static int i915_init(struct driver *drv)
 {
-	int ret;
-	int device_id;
-	struct i915_device *i915;
+	struct i915_device *i915_dev;
 	drm_i915_getparam_t get_param;
+	int device_id;
+	int ret;
 
-	i915 = calloc(1, sizeof(*i915));
-	if (!i915)
-		return -ENOMEM;
+	i915_dev = calloc(1, sizeof(*i915_dev));
+	if (!i915_dev)
+		return -1;
 
 	memset(&get_param, 0, sizeof(get_param));
 	get_param.param = I915_PARAM_CHIPSET_ID;
@@ -261,16 +266,33 @@ static int i915_init(struct driver *drv)
 	ret = drmIoctl(drv->fd, DRM_IOCTL_I915_GETPARAM, &get_param);
 	if (ret) {
 		fprintf(stderr, "drv: DRM_IOCTL_I915_GETPARAM failed\n");
-		free(i915);
+		free(i915_dev);
 		return -EINVAL;
 	}
 
-	i915->gen = get_gen(device_id);
-	drv->priv = i915;
+	i915_dev->gen = get_gen(device_id);
+	i915_dev->count = 0;
 
-	i915_private_init(drv, &i915->cursor_width, &i915->cursor_height);
+	i915_dev->mgr = drm_intel_bufmgr_gem_init(drv->fd, 16 * 1024);
+	if (!i915_dev->mgr) {
+		fprintf(stderr, "drv: drm_intel_bufmgr_gem_init failed\n");
+		free(i915_dev);
+		return -EINVAL;
+	}
+
+	drv->priv = i915_dev;
+
+	i915_private_init(drv, &i915_dev->cursor_width, &i915_dev->cursor_height);
 
 	return i915_add_combinations(drv);
+}
+
+static void i915_close(struct driver *drv)
+{
+	struct i915_device *i915_dev = drv->priv;
+	drm_intel_bufmgr_destroy(i915_dev->mgr);
+	free(i915_dev);
+	drv->priv = NULL;
 }
 
 static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32_t format,
@@ -278,9 +300,12 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 {
 	int ret;
 	size_t plane;
+	char name[20];
 	uint32_t stride;
-	struct drm_i915_gem_create gem_create;
-	struct drm_i915_gem_set_tiling gem_set_tiling;
+	uint32_t tiling_mode;
+	struct i915_bo *i915_bo;
+
+	stride = drv_stride_from_format(format, width, 0);
 	struct i915_device *i915_dev = (struct i915_device *)bo->drv->priv;
 	struct combination *combo;
 
@@ -350,62 +375,140 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
         bo->width = width;
         bo->height = height;
 
-	memset(&gem_create, 0, sizeof(gem_create));
-	gem_create.size = bo->total_size;
+	snprintf(name, sizeof(name), "i915-buffer-%u", i915_dev->count);
+	i915_dev->count++;
 
-	ret = drmIoctl(bo->drv->fd, DRM_IOCTL_I915_GEM_CREATE, &gem_create);
-	if (ret) {
-		fprintf(stderr, "drv: DRM_IOCTL_I915_GEM_CREATE failed (size=%llu)\n",
-			gem_create.size);
-		return ret;
+	i915_bo = calloc(1, sizeof(*i915_bo));
+	if (!i915_bo)
+		return -ENOMEM;
+
+	bo->priv = i915_bo;
+
+	i915_bo->ibos[0] = drm_intel_bo_alloc(i915_dev->mgr, name, bo->total_size, 0);
+	if (!i915_bo->ibos[0]) {
+		fprintf(stderr, "drv: drm_intel_bo_alloc failed");
+		free(i915_bo);
+		bo->priv = NULL;
+		return -ENOMEM;
 	}
 
-	for (plane = 0; plane < bo->num_planes; plane++)
-		bo->handles[plane].u32 = gem_create.handle;
+	for (plane = 0; plane < bo->num_planes; plane++) {
+		if (plane > 0)
+			drm_intel_bo_reference(i915_bo->ibos[0]);
 
-	memset(&gem_set_tiling, 0, sizeof(gem_set_tiling));
-	gem_set_tiling.handle = bo->handles[0].u32;
-	gem_set_tiling.tiling_mode = bo->tiling;
-	gem_set_tiling.stride = bo->strides[0];
+		bo->handles[plane].u32 = i915_bo->ibos[0]->handle;
+		i915_bo->ibos[plane] = i915_bo->ibos[0];
+	}
 
-	ret = drmIoctl(bo->drv->fd, DRM_IOCTL_I915_GEM_SET_TILING, &gem_set_tiling);
-	if (ret) {
-		struct drm_gem_close gem_close;
-		memset(&gem_close, 0, sizeof(gem_close));
-		gem_close.handle = bo->handles[0].u32;
-		drmIoctl(bo->drv->fd, DRM_IOCTL_GEM_CLOSE, &gem_close);
+	ret = drm_intel_bo_set_tiling(i915_bo->ibos[0], &bo->tiling, bo->strides[0]);
 
-		fprintf(stderr, "drv: DRM_IOCTL_I915_GEM_SET_TILING failed with %d", errno);
+	if (ret || bo->tiling != tiling_mode) {
+		fprintf(stderr, "drv: drm_intel_gem_bo_set_tiling failed errno=%x, stride=%x\n",
+			errno, bo->strides[0]);
+		/* Calls i915 bo destroy. */
+		bo->drv->backend->bo_destroy(bo);
 		return -errno;
 	}
 
 	return 0;
 }
 
-static void i915_close(struct driver *drv)
+static int i915_bo_destroy(struct bo *bo)
 {
-	free(drv->priv);
-	drv->priv = NULL;
+	size_t plane;
+	struct i915_bo *i915_bo = bo->priv;
+
+	for (plane = 0; plane < bo->num_planes; plane++)
+		drm_intel_bo_unreference(i915_bo->ibos[plane]);
+
+	free(i915_bo);
+	bo->priv = NULL;
+
+	return 0;
 }
 
-static void *i915_bo_map(struct bo *bo, struct map_info *data, size_t plane)
+static int i915_bo_import(struct bo *bo, struct drv_import_fd_data *data)
+{
+	size_t plane;
+	uint32_t swizzling;
+	struct i915_bo *i915_bo;
+	struct i915_device *i915_dev = bo->drv->priv;
+
+	i915_bo = calloc(1, sizeof(*i915_bo));
+	if (!i915_bo)
+		return -ENOMEM;
+
+	bo->priv = i915_bo;
+
+	/*
+	 * When self-importing, libdrm_intel increments the reference count
+	 * on the drm_intel_bo. It also returns the same drm_intel_bo per GEM
+	 * handle. Thus, we don't need to increase the reference count
+	 * (i.e, drv_increment_reference_count) when importing with this
+	 * backend.
+	 */
+	for (plane = 0; plane < bo->num_planes; plane++) {
+
+		i915_bo->ibos[plane] = drm_intel_bo_gem_create_from_prime(
+		    i915_dev->mgr, data->fds[plane], data->sizes[plane]);
+
+		if (!i915_bo->ibos[plane]) {
+			/*
+			 * Need to call GEM close on planes that were opened,
+			 * if any. Adjust the num_planes variable to be the
+			 * plane that failed, so GEM close will be called on
+			 * planes before that plane.
+			 */
+			bo->num_planes = plane;
+			i915_bo_destroy(bo);
+			fprintf(stderr, "drv: i915: failed to import failed");
+			return -EINVAL;
+		}
+
+		bo->handles[plane].u32 = i915_bo->ibos[plane]->handle;
+	}
+
+	if (drm_intel_bo_get_tiling(i915_bo->ibos[0], &bo->tiling, &swizzling)) {
+		fprintf(stderr, "drv: drm_intel_bo_get_tiling failed");
+		i915_bo_destroy(bo);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static void *i915_bo_map(struct bo *bo, struct map_info *data, size_t plane, int prot)
 {
 	int ret;
-	struct drm_i915_gem_mmap_gtt gem_map;
+	struct i915_bo *i915_bo = bo->priv;
 
-	memset(&gem_map, 0, sizeof(gem_map));
-	gem_map.handle = bo->handles[0].u32;
+	if (bo->tiling == I915_TILING_NONE)
+		/* TODO(gsingh): use bo_map flags to determine if we should
+		 * enable writing.
+		 */
+		ret = drm_intel_bo_map(i915_bo->ibos[0], 1);
+	else
+		ret = drm_intel_gem_bo_map_gtt(i915_bo->ibos[0]);
 
-	ret = drmIoctl(bo->drv->fd, DRM_IOCTL_I915_GEM_MMAP_GTT, &gem_map);
 	if (ret) {
-		fprintf(stderr, "drv: DRM_IOCTL_I915_GEM_MMAP_GTT failed\n");
+		fprintf(stderr, "drv: i915_bo_map failed.");
 		return MAP_FAILED;
 	}
 
-	data->length = bo->total_size;
+	return i915_bo->ibos[0]->virtual;
+}
 
-	return mmap(0, bo->total_size, PROT_READ | PROT_WRITE, MAP_SHARED, bo->drv->fd,
-		    gem_map.offset);
+static int i915_bo_unmap(struct bo *bo, struct map_info *data)
+{
+	int ret;
+	struct i915_bo *i915_bo = bo->priv;
+
+	if (bo->tiling == I915_TILING_NONE)
+		ret = drm_intel_bo_unmap(i915_bo->ibos[0]);
+	else
+		ret = drm_intel_gem_bo_unmap_gtt(i915_bo->ibos[0]);
+
+	return ret;
 }
 
 static uint32_t i915_resolve_format(uint32_t format, uint64_t usage)
@@ -438,9 +541,10 @@ struct backend backend_i915 = {
 	.init = i915_init,
 	.close = i915_close,
 	.bo_create = i915_bo_create,
-	.bo_destroy = drv_gem_bo_destroy,
-	.bo_import = drv_prime_bo_import,
+	.bo_destroy = i915_bo_destroy,
+	.bo_import = i915_bo_import,
 	.bo_map = i915_bo_map,
+	.bo_unmap = i915_bo_unmap,
 	.resolve_format = i915_resolve_format,
 };
 
