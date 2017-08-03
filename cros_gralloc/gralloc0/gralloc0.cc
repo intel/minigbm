@@ -165,7 +165,10 @@ static int gralloc0_open(const struct hw_module_t *mod, const char *name, struct
 		return 0;
 	}
 
-	if (strcmp(name, GRALLOC_HARDWARE_GPU0)) {
+        /* On Android M, Surfaceflinger tries to open the gralloc device
+         * using name GRALLOC_HARDWARE_FB0.
+         */
+        if ((strcmp(name, GRALLOC_HARDWARE_GPU0)!=0) && (strcmp(name, GRALLOC_HARDWARE_FB0)!=0)) {
 		cros_gralloc_error("Incorrect device name - %s.", name);
 		return -EINVAL;
 	}
