@@ -82,6 +82,20 @@ uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_
 	return usage;
 }
 
+bool IsSupportedYUVFormat(uint32_t droid_format) {
+    switch (droid_format) {
+	case HAL_PIXEL_FORMAT_YCbCr_422_I:
+	case HAL_PIXEL_FORMAT_YCbCr_420_888:
+	case HAL_PIXEL_FORMAT_NV12:
+	case HAL_PIXEL_FORMAT_YV12:
+	    return true;
+	default:
+	    return false;
+    }
+
+    return false;
+}
+
 namespace android {
 
 /* CrosGralloc1 is a Singleton and pCrosGralloc1 holds pointer to its instance*/
@@ -394,9 +408,7 @@ int32_t CrosGralloc1::lockFlex(
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
        }
 
-       if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_NV12) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
+       if (!IsSupportedYUVFormat(hnd->droid_format)) {
 		cros_gralloc_error("lockFlex: Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
        }
@@ -428,9 +440,7 @@ int32_t CrosGralloc1::lockYCbCr(
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_NV12) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
+	if (!IsSupportedYUVFormat(hnd->droid_format)) {
 		cros_gralloc_error("Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
