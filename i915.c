@@ -163,6 +163,8 @@ static int i915_add_combinations(struct driver *drv)
 	if (ret)
 		return ret;
 
+	drv_modify_combination(drv, DRM_FORMAT_NV12, &metadata, BO_USE_SCANOUT | BO_USE_RENDERING | BO_USE_TEXTURE);
+
 	metadata.tiling = I915_TILING_Y;
 	metadata.priority = 3;
 	metadata.modifier = I915_FORMAT_MOD_Y_TILED;
