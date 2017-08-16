@@ -24,6 +24,7 @@ static uint32_t subsample_stride(uint32_t stride, uint32_t format, size_t plane)
 	if (plane != 0) {
 		switch (format) {
 		case DRM_FORMAT_YVU420:
+		case DRM_FORMAT_YUV420:
 		case DRM_FORMAT_YVU420_ANDROID:
 			stride = DIV_ROUND_UP(stride, 2);
 			break;
@@ -43,7 +44,10 @@ static uint32_t bpp_from_format(uint32_t format, size_t plane)
 	case DRM_FORMAT_R8:
 	case DRM_FORMAT_RGB332:
 	case DRM_FORMAT_YVU420:
+	case DRM_FORMAT_YUV420:
 	case DRM_FORMAT_YVU420_ANDROID:
+	case DRM_FORMAT_YUV444:
+	case DRM_FORMAT_NV16:
 		return 8;
 
 	case DRM_FORMAT_NV12:
@@ -61,6 +65,7 @@ static uint32_t bpp_from_format(uint32_t format, size_t plane)
 	case DRM_FORMAT_BGRX5551:
 	case DRM_FORMAT_GR88:
 	case DRM_FORMAT_RG88:
+	case DRM_FORMAT_R16:
 	case DRM_FORMAT_RGB565:
 	case DRM_FORMAT_RGBA4444:
 	case DRM_FORMAT_RGBA5551:
@@ -181,7 +186,7 @@ int drv_dumb_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32_t 
 		aligned_width = ALIGN(width, 32);
 	}
 
-	if (format == DRM_FORMAT_YVU420_ANDROID || format == DRM_FORMAT_YVU420) {
+	if (format == DRM_FORMAT_YVU420_ANDROID || format == DRM_FORMAT_YVU420 || format == DRM_FORMAT_YUV420) {
 		aligned_height = 3 * DIV_ROUND_UP(height, 2);
 	}
 

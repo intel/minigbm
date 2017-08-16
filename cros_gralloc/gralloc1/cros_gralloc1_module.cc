@@ -75,7 +75,13 @@ uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_
 	if (producer_flags & GRALLOC1_PRODUCER_USAGE_PROTECTED)
 		usage |= BO_USE_PROTECTED;
 	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CAMERA)
-                usage |= BO_USE_CAMERA_WRITE;
+		usage |= BO_USE_CAMERA_WRITE;
+	if (producer_flags & GRALLOC_USAGE_PRIVATE_0)
+		usage |= BO_USE_LINEAR;
+	if (producer_flags & GRALLOC_USAGE_PRIVATE_1)
+		usage |= BO_USE_X_TILED;
+	if (producer_flags & GRALLOC_USAGE_PRIVATE_2)
+		usage |= BO_USE_Y_TILED;
 
 	return usage;
 }

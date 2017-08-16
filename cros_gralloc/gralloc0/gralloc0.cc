@@ -74,6 +74,12 @@ static int64_t gralloc0_convert_flags(int flags)
 		usage |= BO_USE_CAMERA_READ;
 	if (flags & GRALLOC_USAGE_RENDERSCRIPT)
 		usage |= BO_USE_RENDERSCRIPT;
+	if (flags & GRALLOC_USAGE_PRIVATE_0)
+		usage |= BO_USE_LINEAR;
+	if (flags & GRALLOC_USAGE_PRIVATE_1)
+		usage |= BO_USE_X_TILED;
+	if (flags & GRALLOC_USAGE_PRIVATE_2)
+		usage |= BO_USE_Y_TILED;
 
 	return usage;
 }
