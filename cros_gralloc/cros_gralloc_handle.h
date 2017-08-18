@@ -36,6 +36,17 @@ struct cros_gralloc_handle {
 	uint32_t producer_usage;
 	uint32_t requested_width;
 	uint32_t requested_height;
+	uint32_t yuv_color_range;   // YUV Color range.
+	uint32_t is_updated;        // frame updated flag
+	uint32_t is_encoded;        // frame encoded flag
+	uint32_t is_encrypted;
+	uint32_t is_key_frame;
+	uint32_t is_interlaced;
+	uint32_t is_mmc_capable;
+	uint32_t compression_mode;
+	uint32_t compression_hint;
+	uint32_t codec;
+
 };
 
 typedef const struct cros_gralloc_handle *cros_gralloc_handle_t;
