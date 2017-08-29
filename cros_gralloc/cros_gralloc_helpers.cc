@@ -54,6 +54,14 @@ uint32_t cros_gralloc_convert_format(int format)
 		return DRM_FORMAT_R8;
 	case HAL_PIXEL_FORMAT_YCbCr_422_I:
 		return DRM_FORMAT_YUYV;
+	case HAL_PIXEL_FORMAT_Y8:
+	  return DRM_FORMAT_R8;
+	case HAL_PIXEL_FORMAT_Y16:
+	  return DRM_FORMAT_R16;
+	case HAL_PIXEL_FORMAT_YCbCr_444_888:
+	  return DRM_FORMAT_YUV444;
+	case HAL_PIXEL_FORMAT_YCrCb_420_SP:
+	  return DRM_FORMAT_NV21;
 	}
 
 	return DRM_FORMAT_NONE;

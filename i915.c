@@ -131,6 +131,8 @@ static int i915_add_combinations(struct driver *drv)
 	/* IPU3 camera ISP supports only NV12 output. */
 	drv_modify_combination(drv, DRM_FORMAT_NV12, &metadata,
 			       BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
+	drv_modify_combination(drv, DRM_FORMAT_YVU420_ANDROID, &metadata,
+	           BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
 	/*
 	 * R8 format is used for Android's HAL_PIXEL_FORMAT_BLOB and is used for JPEG snapshots
 	 * from camera.
