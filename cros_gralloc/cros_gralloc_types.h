@@ -12,7 +12,7 @@
  * range available for HAL implementation specific formats.
  */
 enum {
-       HAL_PIXEL_FORMAT_NV12 = 0x102,
+       HAL_PIXEL_FORMAT_NV12 = 0x10F,
 };
 
 struct cros_gralloc_buffer_descriptor {
