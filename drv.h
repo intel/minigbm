@@ -37,6 +37,10 @@ extern "C" {
 #define BO_USE_CAMERA_READ		(1ull << 14)
 #define BO_USE_RENDERSCRIPT		(1ull << 16)
 #define BO_USE_TEXTURE			(1ull << 17)
+//Add the usage here to directly control the tiling of the format
+#define BO_USE_X_TILED      (1ull << 18)
+#define BO_USE_Y_TILED      (1ull << 19)
+
 
 /* Read-Write permissions for drv_bo_map() flags */
 #define BO_TRANSFER_NONE 0

@@ -251,6 +251,10 @@ enum gbm_bo_flags {
     * The buffer will be read from by a camera subsystem.
     */
    GBM_BO_USE_CAMERA_READ = (1 << 7),
+
+   GBM_BO_USE_X_TILED = (1 << 8),
+
+   GBM_BO_USE_Y_TILED = (1 << 9)
 };
 
 int

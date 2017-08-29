@@ -131,22 +131,38 @@ static int i915_add_combinations(struct driver *drv)
 	/* IPU3 camera ISP supports only NV12 output. */
 	drv_modify_combination(drv, DRM_FORMAT_NV12, &metadata,
 			       BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
+	drv_modify_combination(drv, DRM_FORMAT_YVU420_ANDROID, &metadata,
+	           BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
 	/*
 	 * R8 format is used for Android's HAL_PIXEL_FORMAT_BLOB and is used for JPEG snapshots
 	 * from camera.
 	 */
 	drv_modify_combination(drv, DRM_FORMAT_R8, &metadata,
 			       BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
+	drv_modify_combination(drv, DRM_FORMAT_YUYV, &metadata,
+			       BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
+	drv_add_combination(drv, DRM_FORMAT_R16, &metadata,
+			       BO_USE_LINEAR | BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
+	drv_add_combination(drv, DRM_FORMAT_NV16, &metadata,
+			       BO_USE_LINEAR | BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
+	drv_add_combination(drv, DRM_FORMAT_YUV420, &metadata,
+			       BO_USE_LINEAR | BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
+	drv_add_combination(drv, DRM_FORMAT_YUV444, &metadata,
+			       BO_USE_LINEAR | BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
+	drv_add_combination(drv, DRM_FORMAT_NV21, &metadata,
+			       BO_USE_LINEAR | BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
 
 	render_flags &= ~BO_USE_RENDERSCRIPT;
 	render_flags &= ~BO_USE_SW_WRITE_OFTEN;
 	render_flags &= ~BO_USE_SW_READ_OFTEN;
 	render_flags &= ~BO_USE_LINEAR;
+	render_flags |= BO_USE_X_TILED;
 
 	texture_flags &= ~BO_USE_RENDERSCRIPT;
 	texture_flags &= ~BO_USE_SW_WRITE_OFTEN;
 	texture_flags &= ~BO_USE_SW_READ_OFTEN;
 	texture_flags &= ~BO_USE_LINEAR;
+	texture_flags |= BO_USE_X_TILED;
 
 	metadata.tiling = I915_TILING_X;
 	metadata.priority = 2;
@@ -163,6 +179,14 @@ static int i915_add_combinations(struct driver *drv)
 	if (ret)
 		return ret;
 
+	drv_modify_combination(drv, DRM_FORMAT_NV12, &metadata, BO_USE_SCANOUT | BO_USE_RENDERING | BO_USE_TEXTURE);
+
+	render_flags &= ~BO_USE_X_TILED;
+	render_flags |= BO_USE_Y_TILED;
+
+	texture_flags &= ~BO_USE_X_TILED;
+	texture_flags |= BO_USE_Y_TILED;
+
 	metadata.tiling = I915_TILING_Y;
 	metadata.priority = 3;
 	metadata.modifier = I915_FORMAT_MOD_Y_TILED;
@@ -177,6 +201,9 @@ static int i915_add_combinations(struct driver *drv)
 				   texture_flags);
 	if (ret)
 		return ret;
+
+	drv_modify_combination(drv, DRM_FORMAT_NV12, &metadata,
+			       BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE);
 
 	items = drv_query_kms(drv, &num_items);
 	if (!items || !num_items)

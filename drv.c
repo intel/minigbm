@@ -531,6 +531,7 @@ size_t drv_num_planes_from_format(uint32_t format)
 	case DRM_FORMAT_C8:
 	case DRM_FORMAT_GR88:
 	case DRM_FORMAT_R8:
+	case DRM_FORMAT_R16:
 	case DRM_FORMAT_RG88:
 	case DRM_FORMAT_RGB332:
 	case DRM_FORMAT_RGB565:
@@ -558,8 +559,11 @@ size_t drv_num_planes_from_format(uint32_t format)
 		return 1;
 	case DRM_FORMAT_NV12:
 	case DRM_FORMAT_NV21:
+	case DRM_FORMAT_NV16:
 		return 2;
 	case DRM_FORMAT_YVU420:
+	case DRM_FORMAT_YUV420:
+	case DRM_FORMAT_YUV444:
 	case DRM_FORMAT_YVU420_ANDROID:
 		return 3;
 	}
@@ -576,6 +580,7 @@ uint32_t drv_size_from_format(uint32_t format, uint32_t stride, uint32_t height,
 	switch (format) {
 	case DRM_FORMAT_NV12:
 	case DRM_FORMAT_YVU420:
+	case DRM_FORMAT_YUV420:
 	case DRM_FORMAT_YVU420_ANDROID:
 		vertical_subsampling = (plane == 0) ? 1 : 2;
 		break;
