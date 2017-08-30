@@ -18,6 +18,7 @@
 #include "drv_priv.h"
 #include "helpers.h"
 #include "util.h"
+#include "i915_private.h"
 
 #ifdef DRV_AMDGPU
 extern struct backend backend_amdgpu;
@@ -611,8 +612,7 @@ size_t drv_num_planes_from_format(uint32_t format)
 		return 3;
 	}
 
-	fprintf(stderr, "drv: UNKNOWN FORMAT %d\n", format);
-	return 0;
+	return i915_private_num_planes_from_format(format);
 }
 
 uint32_t drv_num_buffers_per_bo(struct bo *bo)

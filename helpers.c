@@ -16,6 +16,7 @@
 
 #include "drv_priv.h"
 #include "helpers.h"
+#include "i915_private.h"
 #include "util.h"
 
 static uint32_t subsample_stride(uint32_t stride, uint32_t format, size_t plane)
@@ -100,8 +101,7 @@ static uint32_t bpp_from_format(uint32_t format, size_t plane)
 		return 32;
 	}
 
-	fprintf(stderr, "drv: UNKNOWN FORMAT %d\n", format);
-	return 0;
+	return i915_private_bpp_from_format(format, plane);
 }
 
 uint32_t drv_bo_get_stride_in_pixels(struct bo *bo)
@@ -139,7 +139,7 @@ uint32_t drv_size_from_format(uint32_t format, uint32_t stride, uint32_t height,
 		vertical_subsampling = (plane == 0) ? 1 : 2;
 		break;
 	default:
-		vertical_subsampling = 1;
+		i915_private_vertical_subsampling_from_format(&vertical_subsampling, format, plane);
 	}
 
 	return stride * DIV_ROUND_UP(height, vertical_subsampling);
