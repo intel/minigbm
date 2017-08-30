@@ -7,6 +7,8 @@
 #include "cros_gralloc_driver.h"
 #include "../util.h"
 
+#include "i915_private_android.h"
+
 #include <cstdlib>
 #include <fcntl.h>
 #include <xf86drm.h>
@@ -138,7 +140,11 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	hnd->flags[1] = static_cast<uint32_t>(descriptor->drv_usage);
 	hnd->pixel_stride = drv_bo_get_stride_in_pixels(bo);
 	hnd->magic = cros_gralloc_magic;
-	hnd->droid_format = descriptor->droid_format;
+	int32_t format = i915_private_invert_format(hnd->format);
+	if (format == 0) {
+		format =  descriptor->droid_format;
+	}
+	hnd->droid_format = format;
 	hnd->usage = descriptor->producer_usage;
 	hnd->producer_usage = descriptor->producer_usage;
 	hnd->consumer_usage = descriptor->consumer_usage;

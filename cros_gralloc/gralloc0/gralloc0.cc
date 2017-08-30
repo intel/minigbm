@@ -9,6 +9,9 @@
 #include <hardware/gralloc.h>
 #include <memory.h>
 
+#include "../i915_private_android.h"
+#include "../i915_private_android_types.h"
+
 struct gralloc0_module {
 	gralloc_module_t base;
 	std::unique_ptr<alloc_device_t> alloc;
@@ -37,7 +40,7 @@ static int64_t gralloc0_convert_flags(int flags)
 	uint64_t usage = BO_USE_NONE;
 
 	if (flags & GRALLOC_USAGE_CURSOR)
-		usage |= BO_USE_NONE;
+                usage |= BO_USE_CURSOR;
 	if ((flags & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_RARELY)
 		usage |= BO_USE_SW_READ_RARELY;
 	if ((flags & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_OFTEN)
@@ -102,7 +105,7 @@ static int gralloc0_alloc(alloc_device_t *dev, int w, int h, int format, int usa
 	if (!supported) {
 		cros_gralloc_error("Unsupported combination -- HAL format: %u, HAL flags: %u, "
 				   "drv_format: %4.4s, drv_flags: %llu",
-				   format, usage, reinterpret_cast<char *>(&descriptor.drm_format),
+                                   format, usage, drmFormat2Str(descriptor.drm_format),
 				   static_cast<unsigned long long>(descriptor.drv_usage));
 		return -EINVAL;
 	}
@@ -330,7 +333,8 @@ static int gralloc0_lock_async_ycbcr(struct gralloc_module_t const *module, buff
 
 	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
 	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED)) {
+            (hnd->droid_format != HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) &&
+	     !i915_private_supported_yuv_format(hnd->droid_format)) {
 		cros_gralloc_error("Non-YUV format not compatible.");
 		return -EINVAL;
 	}
@@ -342,6 +346,7 @@ static int gralloc0_lock_async_ycbcr(struct gralloc_module_t const *module, buff
 
 	switch (hnd->format) {
 	case DRM_FORMAT_NV12:
+	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 		ycbcr->y = addr[0];
 		ycbcr->cb = addr[1];
 		ycbcr->cr = addr[1] + 1;

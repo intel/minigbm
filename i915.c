@@ -16,6 +16,7 @@
 #include "drv_priv.h"
 #include "helpers.h"
 #include "util.h"
+#include "i915_private.h"
 
 #define I915_CACHELINE_SIZE 64
 #define I915_CACHELINE_MASK (I915_CACHELINE_SIZE - 1)
@@ -34,6 +35,8 @@ static const uint32_t texture_source_formats[] = { DRM_FORMAT_YVU420, DRM_FORMAT
 struct i915_device {
 	uint32_t gen;
 	int32_t has_llc;
+	uint64_t cursor_width;
+	uint64_t cursor_height;
 };
 
 static uint32_t i915_get_gen(int device_id)
@@ -164,6 +167,8 @@ static int i915_add_combinations(struct driver *drv)
 	if (ret)
 		return ret;
 
+	i915_private_add_combinations(drv);
+
 	items = drv_query_kms(drv, &num_items);
 	if (!items || !num_items)
 		return 0;
@@ -203,8 +208,8 @@ static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *strid
 			horizontal_alignment = 512;
 			vertical_alignment = 8;
 		} else {
-			horizontal_alignment = 128;
-			vertical_alignment = 32;
+                       horizontal_alignment = 128;
+                       vertical_alignment = 32;
 		}
 		break;
 	}
@@ -229,6 +234,8 @@ static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *strid
 	 */
 	if (bo->num_planes > 1)
 		vertical_alignment = MAX(vertical_alignment, 16);
+	
+	i915_private_align_dimensions(bo->format, &vertical_alignment);
 
 	*aligned_height = ALIGN(bo->height, vertical_alignment);
 	if (i915->gen > 3) {
@@ -293,6 +300,8 @@ static int i915_init(struct driver *drv)
 
 	drv->priv = i915;
 
+	i915_private_init(drv, &i915->cursor_width, &i915->cursor_height);
+
 	return i915_add_combinations(drv);
 }
 
@@ -304,6 +313,7 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 	uint32_t stride;
 	struct drm_i915_gem_create gem_create;
 	struct drm_i915_gem_set_tiling gem_set_tiling;
+	struct i915_device *i915_dev = (struct i915_device *)bo->drv->priv;
 	struct combination *combo;
 
 	combo = drv_get_combination(bo->drv, format, flags);
@@ -314,9 +324,19 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 
 	stride = drv_stride_from_format(format, width, 0);
 
-	ret = i915_align_dimensions(bo, bo->tiling, &stride, &height);
-	if (ret)
-		return ret;
+        /*
+         * Align cursor width and height to values expected by Intel
+         * HW.
+         */
+        if (flags & BO_USE_CURSOR) {
+            width = ALIGN(width, i915_dev->cursor_width);
+            height = ALIGN(height, i915_dev->cursor_height);
+            stride = drv_stride_from_format(format, width, 0);
+        } else {
+            ret = i915_align_dimensions(bo, bo->tiling, &stride, &height);
+            if (ret)
+                return ret;
+        }
 
 	/*
 	 * HAL_PIXEL_FORMAT_YV12 requires the buffer height not be aligned, but we need to keep
@@ -355,6 +375,12 @@ static int i915_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32
 	 */
 	if (bo->tiling == I915_TILING_NONE)
 		bo->total_size += 64;
+
+        /*
+         * Ensure we pass aligned width/height.
+         */
+        bo->width = width;
+        bo->height = height;
 
 	memset(&gem_create, 0, sizeof(gem_create));
 	gem_create.size = bo->total_size;
@@ -487,11 +513,17 @@ static int i915_bo_unmap(struct bo *bo, struct map_info *data)
 
 static uint32_t i915_resolve_format(uint32_t format, uint64_t usage)
 {
+	uint32_t resolved_format;
+	if (i915_private_resolve_format(format, usage, &resolved_format)) {
+	    return resolved_format;
+	}
+
 	switch (format) {
 	case DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED:
 		/* KBL camera subsystem requires NV12. */
 		if (usage & (BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE))
 			return DRM_FORMAT_NV12;
+
 		/*HACK: See b/28671744 */
 		return DRM_FORMAT_XBGR8888;
 	case DRM_FORMAT_FLEX_YCbCr_420_888:
