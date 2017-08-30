@@ -7,7 +7,8 @@ LOCAL_CPP_EXTENSION := .cc
 LOCAL_SRC_FILES += \
 	cros_gralloc/cros_gralloc_buffer.cc \
 	cros_gralloc/cros_gralloc_driver.cc \
-        cros_gralloc/cros_gralloc_helpers.cc
+	cros_gralloc/cros_gralloc_helpers.cc \
+	cros_gralloc/i915_private_android.cc
 
 ifeq ($(strip $(BOARD_USES_GRALLOC1)), true)
 LOCAL_SRC_FILES += cros_gralloc/gralloc1/cros_gralloc1_module.cc

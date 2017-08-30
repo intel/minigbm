@@ -16,6 +16,7 @@
 #include "drv_priv.h"
 #include "helpers.h"
 #include "util.h"
+#include "i915_private.h"
 
 #ifdef DRV_AMDGPU
 extern struct backend backend_amdgpu;
@@ -564,8 +565,7 @@ size_t drv_num_planes_from_format(uint32_t format)
 		return 3;
 	}
 
-	fprintf(stderr, "drv: UNKNOWN FORMAT %d\n", format);
-	return 0;
+	return i915_private_num_planes_from_format(format);
 }
 
 uint32_t drv_size_from_format(uint32_t format, uint32_t stride, uint32_t height, size_t plane)
@@ -580,7 +580,7 @@ uint32_t drv_size_from_format(uint32_t format, uint32_t stride, uint32_t height,
 		vertical_subsampling = (plane == 0) ? 1 : 2;
 		break;
 	default:
-		vertical_subsampling = 1;
+		i915_private_vertical_subsampling_from_format(&vertical_subsampling, format, plane);
 	}
 
 	return stride * DIV_ROUND_UP(height, vertical_subsampling);
