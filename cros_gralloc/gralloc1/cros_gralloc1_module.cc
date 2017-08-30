@@ -24,6 +24,8 @@
 #include <hardware/gralloc.h>
 
 #include <inttypes.h>
+#include "../i915_private_android.h"
+#include "../i915_private_android_types.h"
 
 template <typename PFN, typename T> static gralloc1_function_pointer_t asFP(T function)
 {
@@ -76,6 +78,20 @@ uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_
 		usage |= BO_USE_CAMERA_WRITE;
 
 	return usage;
+}
+
+bool IsSupportedYUVFormat(uint32_t droid_format)
+{
+	switch (droid_format) {
+	case HAL_PIXEL_FORMAT_YCbCr_420_888:
+	case HAL_PIXEL_FORMAT_YV12:
+	case HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED:
+		return true;
+	default:
+		return i915_private_supported_yuv_format(droid_format);
+	}
+
+	return false;
 }
 
 namespace android
@@ -371,8 +387,7 @@ int32_t CrosGralloc1::lockFlex(buffer_handle_t bufferHandle,
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
+	if (!IsSupportedYUVFormat(hnd->droid_format)) {
 		cros_gralloc_error("lockFlex: Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
@@ -402,8 +417,7 @@ int32_t CrosGralloc1::lockYCbCr(buffer_handle_t bufferHandle,
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
+	if (!IsSupportedYUVFormat(hnd->droid_format)) {
 		cros_gralloc_error("Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
@@ -414,6 +428,7 @@ int32_t CrosGralloc1::lockYCbCr(buffer_handle_t bufferHandle,
 
 	switch (hnd->format) {
 	case DRM_FORMAT_NV12:
+	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 		ycbcr->y = addr[0];
 		ycbcr->cb = addr[1];
 		ycbcr->cr = addr[1] + 1;

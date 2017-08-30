@@ -6,9 +6,20 @@
 
 #include "cros_gralloc_helpers.h"
 
+#include "i915_private_android.h"
+
 #include <cstdlib>
 #include <cutils/log.h>
 #include <sync/sync.h>
+
+const char* drmFormat2Str(int drm_format)
+{
+    static char buf[5];
+    char *pDrmFormat = (char*) &drm_format;
+    snprintf(buf, sizeof(buf), "%c%c%c%c", *pDrmFormat, *(pDrmFormat + 1),
+             *(pDrmFormat + 2), *(pDrmFormat + 3));
+    return buf;
+}
 
 uint32_t cros_gralloc_convert_format(int format)
 {
@@ -43,7 +54,7 @@ uint32_t cros_gralloc_convert_format(int format)
 		return DRM_FORMAT_R8;
 	}
 
-	return DRM_FORMAT_NONE;
+	return i915_private_convert_format(format);
 }
 
 cros_gralloc_handle_t cros_gralloc_convert_handle(buffer_handle_t handle)
