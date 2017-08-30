@@ -26,6 +26,7 @@ LOCAL_SRC_FILES := \
 	gma500.c \
 	helpers.c \
 	i915.c \
+	i915_private.c \
 	marvell.c \
 	mediatek.c \
 	nouveau.c \
