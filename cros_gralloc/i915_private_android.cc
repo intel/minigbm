@@ -30,6 +30,8 @@ uint32_t i915_private_convert_format(int format)
 		return DRM_FORMAT_NV21;
 	case HAL_PIXEL_FORMAT_YCbCr_422_SP:
 		return DRM_FORMAT_NV16;
+	case HAL_PIXEL_FORMAT_YCbCr_422_888:
+		return DRM_FORMAT_YUV422;
 	}
 
 	return DRM_FORMAT_NONE;
@@ -69,6 +71,8 @@ int32_t i915_private_invert_format(int format)
 		return HAL_PIXEL_FORMAT_YCrCb_420_SP;
 	case DRM_FORMAT_NV16:
 		return HAL_PIXEL_FORMAT_YCbCr_422_SP;
+	case DRM_FORMAT_YUV422:
+		return HAL_PIXEL_FORMAT_YCbCr_422_888;
 	default:
 		cros_gralloc_error("Unhandled DRM format %4.4s", drmFormat2Str(format));
 	}
@@ -82,6 +86,7 @@ bool i915_private_supported_yuv_format(uint32_t droid_format)
 	case HAL_PIXEL_FORMAT_NV12:
 	case HAL_PIXEL_FORMAT_NV12_Y_TILED_INTEL:
 	case HAL_PIXEL_FORMAT_YCbCr_422_I:
+	case HAL_PIXEL_FORMAT_YCbCr_422_888:
 	case HAL_PIXEL_FORMAT_YCbCr_444_888:
 	case HAL_PIXEL_FORMAT_YCrCb_420_SP:
 	case HAL_PIXEL_FORMAT_Y16:
