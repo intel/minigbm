@@ -7,6 +7,7 @@
 #include "cros_gralloc_buffer.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <sys/mman.h>
 
 cros_gralloc_buffer::cros_gralloc_buffer(uint32_t id, struct bo *acquirebo_,
