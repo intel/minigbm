@@ -229,12 +229,6 @@ static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *strid
 		break;
 	}
 
-	/*
-	 * For multi-planar formats we must be aligned to 16
-	 */
-	if (bo->num_planes > 1)
-		vertical_alignment = MAX(vertical_alignment, 16);
-
 	i915_private_align_dimensions(bo->format, &vertical_alignment);
 
 	*aligned_height = ALIGN(bo->height, vertical_alignment);
