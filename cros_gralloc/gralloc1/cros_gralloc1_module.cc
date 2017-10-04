@@ -354,19 +354,29 @@ android_flex_plane_t ycbcrplanes[3];
 
 int32_t update_flex_layout(struct android_ycbcr *ycbcr, struct android_flex_layout *outFlexLayout)
 {
-	/*Need to add generic support*/
-	ycbcrplanes[0].component = FLEX_COMPONENT_Y;
-	ycbcrplanes[0].top_left = (uint8_t *)ycbcr->y;
-	ycbcrplanes[0].h_increment = ycbcr->ystride;
-	ycbcrplanes[1].component = FLEX_COMPONENT_Cb;
-	ycbcrplanes[1].top_left = (uint8_t *)ycbcr->cb;
-	ycbcrplanes[1].h_increment = ycbcr->cstride;
-	ycbcrplanes[2].component = FLEX_COMPONENT_Cr;
-	ycbcrplanes[2].top_left = (uint8_t *)ycbcr->cr;
-	ycbcrplanes[2].h_increment = ycbcr->chroma_step;
 	outFlexLayout->format = FLEX_FORMAT_YCbCr;
-	outFlexLayout->planes = ycbcrplanes;
 	outFlexLayout->num_planes = 3;
+	for (uint32_t i = 0; i < outFlexLayout->num_planes; i++) {
+		ycbcrplanes[i].bits_per_component = 8;
+		ycbcrplanes[i].bits_used = 8;
+	}
+
+	ycbcrplanes[0].top_left = static_cast<uint8_t *>(ycbcr->y);
+	ycbcrplanes[0].component = FLEX_COMPONENT_Y;
+	ycbcrplanes[0].h_increment = 1;
+	ycbcrplanes[0].v_increment = static_cast<int32_t>(ycbcr->ystride);
+
+	ycbcrplanes[1].top_left = static_cast<uint8_t *>(ycbcr->cb);
+	ycbcrplanes[1].component = FLEX_COMPONENT_Cb;
+	ycbcrplanes[1].h_increment = static_cast<int32_t>(ycbcr->chroma_step);
+	ycbcrplanes[1].v_increment = static_cast<int32_t>(ycbcr->cstride);
+
+	ycbcrplanes[2].top_left = static_cast<uint8_t *>(ycbcr->cr);
+	ycbcrplanes[2].component = FLEX_COMPONENT_Cr;
+	ycbcrplanes[2].h_increment = static_cast<int32_t>(ycbcr->chroma_step);
+	ycbcrplanes[2].v_increment = static_cast<int32_t>(ycbcr->cstride);
+
+	outFlexLayout->planes = ycbcrplanes;
 	return 0;
 }
 
