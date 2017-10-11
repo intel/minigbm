@@ -22,9 +22,10 @@
 
 static const uint32_t private_linear_source_formats[] = { DRM_FORMAT_R16,    DRM_FORMAT_NV16,
 							  DRM_FORMAT_YUV420, DRM_FORMAT_YUV422,
-							  DRM_FORMAT_YUV444, DRM_FORMAT_NV21 };
+							  DRM_FORMAT_YUV444, DRM_FORMAT_NV21,
+							  DRM_FORMAT_P010 };
 
-static const uint32_t private_source_formats[] = { DRM_FORMAT_NV12_Y_TILED_INTEL };
+static const uint32_t private_source_formats[] = { DRM_FORMAT_P010, DRM_FORMAT_NV12_Y_TILED_INTEL };
 
 #if !defined(DRM_CAP_CURSOR_WIDTH)
 #define DRM_CAP_CURSOR_WIDTH 0x8
@@ -138,6 +139,8 @@ uint32_t i915_private_bpp_from_format(uint32_t format, size_t plane)
 	switch (format) {
 	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 		return (plane == 0) ? 8 : 4;
+	case DRM_FORMAT_P010:
+		return (plane == 0) ? 16 : 8;
 	case DRM_FORMAT_YUV420:
 	case DRM_FORMAT_YUV422:
 	case DRM_FORMAT_YUV444:
@@ -157,6 +160,7 @@ void i915_private_vertical_subsampling_from_format(uint32_t *vertical_subsamplin
 	switch (format) {
 	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 	case DRM_FORMAT_YUV420:
+	case DRM_FORMAT_P010:
 		*vertical_subsampling = (plane == 0) ? 1 : 2;
 		break;
 	default:
@@ -171,6 +175,7 @@ size_t i915_private_num_planes_from_format(uint32_t format)
 		return 1;
 	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 	case DRM_FORMAT_NV16:
+	case DRM_FORMAT_P010:
 		return 2;
 	case DRM_FORMAT_YUV420:
 	case DRM_FORMAT_YUV422:
