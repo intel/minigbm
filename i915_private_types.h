@@ -7,5 +7,7 @@
 #ifdef DRV_I915
 
 #define DRM_FORMAT_NV12_Y_TILED_INTEL fourcc_code('9', '9', '9', '6')
+#define DRM_FORMAT_P010_INTEL         fourcc_code('9', '9', '9', '5')
+
 
 #endif
