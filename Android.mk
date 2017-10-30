@@ -39,7 +39,9 @@ LOCAL_SRC_FILES := \
 
 include $(MINIGBM_GRALLOC_MK)
 
-LOCAL_CPPFLAGS += -std=c++14 -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64
+LOCAL_CPPFLAGS += -std=c++14 -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64 \
+                  -Wno-unused-parameter -Wno-switch -Wno-format \
+                  -Wno-unused-variable
 LOCAL_CFLAGS += -Wall -Wsign-compare -Wpointer-arith \
 		-Wcast-qual -Wcast-align \
 		-D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64
