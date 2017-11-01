@@ -126,6 +126,7 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 		hnd->fds[plane] = drv_bo_get_plane_fd(bo, plane);
 		hnd->strides[plane] = drv_bo_get_plane_stride(bo, plane);
 		hnd->offsets[plane] = drv_bo_get_plane_offset(bo, plane);
+		hnd->sizes[plane] = drv_bo_get_plane_size(bo, plane);
 
 		mod = drv_bo_get_plane_format_modifier(bo, plane);
 		hnd->format_modifiers[2 * plane] = static_cast<uint32_t>(mod >> 32);
