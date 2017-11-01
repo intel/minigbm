@@ -52,6 +52,8 @@ LOCAL_CFLAGS += -DDRV_I915
 LOCAL_SHARED_LIBRARIES += libdrm_intel
 endif
 
+LOCAL_SHARED_LIBRARIES += libnativewindow
+
 LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 # The preferred path for vendor HALs is /vendor/lib/hw
