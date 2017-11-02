@@ -9,6 +9,9 @@ LOCAL_PATH := $(call my-dir)
 intel_drivers := i915 i965
 include $(CLEAR_VARS)
 
+# Obtain Android Version
+ANDROID_VERSION := $(word 1, $(subst ., , $(PLATFORM_VERSION)))
+
 SUBDIRS := cros_gralloc
 
 LOCAL_SHARED_LIBRARIES := \
@@ -52,7 +55,12 @@ LOCAL_CFLAGS += -DDRV_I915
 LOCAL_SHARED_LIBRARIES += libdrm_intel
 endif
 
+ifeq ($(shell test $(ANDROID_VERSION) -ge 8; echo $$?), 0)
 LOCAL_SHARED_LIBRARIES += libnativewindow
+LOCAL_STATIC_LIBRARIES += libarect
+LOCAL_HEADER_LIBRARIES += libnativebase_headers
+LOCAL_CFLAGS += -DUSE_VNDK
+endif
 
 LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional

@@ -11,6 +11,8 @@
 #include <cstdlib>
 #include <cutils/log.h>
 #include <sync/sync.h>
+#include <error.h>
+#include <unistd.h>
 
 const char* drmFormat2Str(int drm_format)
 {
