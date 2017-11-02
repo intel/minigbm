@@ -53,6 +53,8 @@ LOCAL_SHARED_LIBRARIES += libdrm_intel
 endif
 
 LOCAL_SHARED_LIBRARIES += libnativewindow
+LOCAL_STATIC_LIBRARIES += libarect
+LOCAL_HEADER_LIBRARIES += libnativebase_headers
 
 LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
