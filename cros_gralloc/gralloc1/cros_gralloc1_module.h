@@ -23,6 +23,7 @@
 
 #include <hardware/gralloc1.h>
 #include <utils/Log.h>
+#include <unistd.h>
 
 struct cros_gralloc_module;
 

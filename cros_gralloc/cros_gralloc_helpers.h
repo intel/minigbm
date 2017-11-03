@@ -12,7 +12,7 @@
 #include "cros_gralloc_types.h"
 
 #include <system/graphics.h>
-#include <system/window.h>
+#include <vndk/window.h>
 
 constexpr uint32_t cros_gralloc_magic = 0xABCDDCBA;
 constexpr uint32_t handle_data_size =
