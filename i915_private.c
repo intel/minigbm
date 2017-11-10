@@ -23,7 +23,7 @@
 static const uint32_t private_linear_source_formats[] = { DRM_FORMAT_R16,    DRM_FORMAT_NV16,
 							  DRM_FORMAT_YUV420, DRM_FORMAT_YUV422,
 							  DRM_FORMAT_YUV444, DRM_FORMAT_NV21,
-							  DRM_FORMAT_P010 };
+							  DRM_FORMAT_P010, DRM_FORMAT_RGB888, DRM_FORMAT_BGR888 };
 
 static const uint32_t private_source_formats[] = { DRM_FORMAT_P010, DRM_FORMAT_NV12_Y_TILED_INTEL };
 
