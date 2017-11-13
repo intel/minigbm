@@ -285,6 +285,13 @@ class CrosGralloc1 : public gralloc1_device_t
 		return error;
 	}
 
+	int32_t setModifier(gralloc1_buffer_descriptor_t descriptor, uint64_t modifier);
+	static int32_t setModifierHook(gralloc1_device_t *device,
+				       gralloc1_buffer_descriptor_t descriptor, uint64_t modifier)
+	{
+		return getAdapter(device)->setModifier(descriptor, modifier);
+	}
+
 	// Adapter internals
 	std::unique_ptr<cros_gralloc_driver> driver;
 };
