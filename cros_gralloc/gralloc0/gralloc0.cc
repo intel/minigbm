@@ -105,6 +105,7 @@ static int gralloc0_alloc(alloc_device_t *dev, int w, int h, int format, int usa
 	descriptor.height = h;
 	descriptor.droid_format = format;
 	descriptor.producer_usage = descriptor.consumer_usage = usage;
+	descriptor.modifier = 0;
 	descriptor.drm_format = cros_gralloc_convert_format(format);
 	descriptor.use_flags = gralloc0_convert_usage(usage);
 

@@ -162,8 +162,8 @@ void CrosGralloc1::doGetCapabilities(uint32_t *outCount, int32_t *outCapabilitie
 gralloc1_function_pointer_t CrosGralloc1::doGetFunction(int32_t intDescriptor)
 {
 	constexpr auto lastDescriptor = static_cast<int32_t>(GRALLOC1_LAST_FUNCTION);
-	if (intDescriptor < 0 || intDescriptor > lastDescriptor) {
-		ALOGE("Invalid function descriptor");
+	if (intDescriptor < 0 || ((intDescriptor > lastDescriptor) && ((intDescriptor < 100) || (intDescriptor > GRALLOC1_LAST_CUSTOM)))) {
+		ALOGE("Invalid function descriptor %d", intDescriptor);
 		return nullptr;
 	}
 
@@ -214,6 +214,8 @@ gralloc1_function_pointer_t CrosGralloc1::doGetFunction(int32_t intDescriptor)
 		    lockHook<struct android_flex_layout, &CrosGralloc1::lockFlex>);
 	case GRALLOC1_FUNCTION_UNLOCK:
 		return asFP<GRALLOC1_PFN_UNLOCK>(unlockHook);
+	case GRALLOC1_FUNCTION_SET_MODIFIER:
+		return asFP<GRALLOC1_PFN_SET_MODIFIER>(setModifierHook);
 	case GRALLOC1_FUNCTION_INVALID:
 		ALOGE("Invalid function descriptor");
 		return nullptr;
@@ -273,6 +275,13 @@ int32_t CrosGralloc1::setFormat(gralloc1_buffer_descriptor_t descriptorId, int32
 	auto hnd = (struct cros_gralloc_buffer_descriptor *)descriptorId;
 	hnd->droid_format = format;
 	hnd->drm_format = cros_gralloc_convert_format(format);
+	return CROS_GRALLOC_ERROR_NONE;
+}
+
+int32_t CrosGralloc1::setModifier(gralloc1_buffer_descriptor_t descriptorId, uint64_t modifier)
+{
+	auto hnd = (struct cros_gralloc_buffer_descriptor *)descriptorId;
+	hnd->modifier = modifier;
 	return CROS_GRALLOC_ERROR_NONE;
 }
 
