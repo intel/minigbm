@@ -141,6 +141,7 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	hnd->width = drv_bo_get_width(bo);
 	hnd->height = drv_bo_get_height(bo);
 	hnd->format = drv_bo_get_format(bo);
+	hnd->tiling_mode = drv_bo_get_stride_or_tiling(bo);
 	hnd->use_flags[0] = static_cast<uint32_t>(descriptor->use_flags >> 32);
 	hnd->use_flags[1] = static_cast<uint32_t>(descriptor->use_flags);
 	hnd->pixel_stride = drv_bo_get_stride_in_pixels(bo);
