@@ -55,7 +55,7 @@ endif
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 27; echo $$?), 0)
 LOCAL_SHARED_LIBRARIES += libnativewindow
 LOCAL_STATIC_LIBRARIES += libarect
-LOCAL_HEADER_LIBRARIES += libnativebase_headers
+LOCAL_HEADER_LIBRARIES += libnativebase_headers libsystem_headers libhardware_headers libutils_headers
 LOCAL_CFLAGS += -DUSE_VNDK
 endif
 
