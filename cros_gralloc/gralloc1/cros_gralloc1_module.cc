@@ -372,8 +372,12 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 	}
 
 	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
+	struct rectangle rect = { .x = static_cast<uint32_t>(accessRegion.left),
+				  .y = static_cast<uint32_t>(accessRegion.top),
+				  .width = static_cast<uint32_t>(accessRegion.width),
+				  .height = static_cast<uint32_t>(accessRegion.height) };
 
-	if (driver->lock(bufferHandle, acquireFence, map_flags, addr))
+	if (driver->lock(bufferHandle, acquireFence, &rect, map_flags, addr))
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 
 	*outData = addr[0];
@@ -463,7 +467,12 @@ int32_t CrosGralloc1::lockYCbCr(buffer_handle_t bufferHandle,
 	}
 
 	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
-	if (driver->lock(bufferHandle, acquireFence, map_flags, addr))
+	struct rectangle rect = { .x = static_cast<uint32_t>(accessRegion.left),
+				  .y = static_cast<uint32_t>(accessRegion.top),
+				  .width = static_cast<uint32_t>(accessRegion.width),
+				  .height = static_cast<uint32_t>(accessRegion.height) };
+
+	if (driver->lock(bufferHandle, acquireFence, &rect, map_flags, addr))
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 
 	switch (hnd->format) {

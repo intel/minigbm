@@ -19,12 +19,12 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_SRC_FILES := \
 	amdgpu.c \
-	cirrus.c \
 	drv.c \
 	evdi.c \
 	exynos.c \
 	gma500.c \
 	helpers.c \
+	helpers_array.c \
 	i915.c \
 	i915_private.c \
 	marvell.c \
@@ -35,7 +35,8 @@ LOCAL_SRC_FILES := \
 	udl.c \
 	vc4.c \
 	vgem.c \
-	virtio_gpu.c
+	virtio_dumb.c \
+	virtio_virgl.c
 
 include $(MINIGBM_GRALLOC_MK)
 
