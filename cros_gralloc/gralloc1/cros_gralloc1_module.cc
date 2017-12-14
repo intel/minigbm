@@ -366,11 +366,6 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if ((hnd->droid_format == HAL_PIXEL_FORMAT_YCbCr_420_888)) {
-		cros_gralloc_error("HAL_PIXEL_FORMAT_YCbCr_*_888 format not compatible.");
-		return CROS_GRALLOC_ERROR_BAD_HANDLE;
-	}
-
 	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
 
 	if (driver->lock(bufferHandle, acquireFence, map_flags, addr))
