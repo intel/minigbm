@@ -27,7 +27,6 @@ struct cros_gralloc_handle {
 	uint32_t width;
 	uint32_t height;
 	uint32_t format;       /* DRM format */
-	uint32_t tiling_mode;
 	uint32_t use_flags[2]; /* Buffer creation flags */
 	uint32_t magic;
 	uint32_t pixel_stride;
