@@ -152,7 +152,6 @@ uint32_t drv_size_from_format(uint32_t format, uint32_t stride, uint32_t height,
  */
 int drv_bo_from_format(struct bo *bo, uint32_t stride, uint32_t aligned_height, uint32_t format)
 {
-
 	size_t p, num_planes;
 	uint32_t offset = 0;
 
@@ -622,6 +621,5 @@ uint64_t drv_pick_modifier(const uint64_t *modifiers, uint32_t count,
 			}
 		}
 	}
-
 	return DRM_FORMAT_MOD_LINEAR;
 }
