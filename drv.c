@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -54,6 +55,9 @@ extern struct backend backend_vc4;
 #endif
 extern struct backend backend_vgem;
 extern struct backend backend_virtio_gpu;
+
+// flag to indicate RBC modifier
+bool ccs_modifier = false;
 
 static struct backend *drv_get_backend(int fd)
 {
@@ -212,7 +216,6 @@ struct combination *drv_get_combination(struct driver *drv, uint32_t format, uin
 struct bo *drv_bo_new(struct driver *drv, uint32_t width, uint32_t height, uint32_t format,
 		      uint64_t use_flags)
 {
-
 	struct bo *bo;
 	bo = (struct bo *)calloc(1, sizeof(*bo));
 
@@ -240,6 +243,8 @@ struct bo *drv_bo_create(struct driver *drv, uint32_t width, uint32_t height, ui
 	int ret;
 	size_t plane;
 	struct bo *bo;
+
+        ccs_modifier = false;
 
 	bo = drv_bo_new(drv, width, height, format, use_flags);
 
@@ -278,6 +283,13 @@ struct bo *drv_bo_create_with_modifiers(struct driver *drv, uint32_t width, uint
 		errno = ENOENT;
 		return NULL;
 	}
+
+        for (uint32_t i = 0; i < count; i++) {
+            if (modifiers[i] == I915_FORMAT_MOD_Y_TILED_CCS) {
+                ccs_modifier = true;
+                break;
+            }
+        }
 
 	bo = drv_bo_new(drv, width, height, format, BO_USE_NONE);
 
@@ -600,10 +612,15 @@ size_t drv_num_planes_from_format(uint32_t format)
 	case DRM_FORMAT_XRGB1555:
 	case DRM_FORMAT_XRGB2101010:
 	case DRM_FORMAT_XRGB4444:
-	case DRM_FORMAT_XRGB8888:
 	case DRM_FORMAT_YUYV:
 	case DRM_FORMAT_YVYU:
 		return 1;
+        case DRM_FORMAT_XRGB8888:
+                if (ccs_modifier) {
+                        return 2;
+                } else {
+                        return 1;
+                }
 	case DRM_FORMAT_NV12:
 	case DRM_FORMAT_NV21:
 		return 2;
