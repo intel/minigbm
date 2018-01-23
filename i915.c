@@ -31,7 +31,7 @@ static const uint32_t tileable_texture_source_formats[] = { DRM_FORMAT_GR88, DRM
 							    DRM_FORMAT_R8, DRM_FORMAT_UYVY,
 							    DRM_FORMAT_YUYV, DRM_FORMAT_YVYU, DRM_FORMAT_VYUY };
 
-static const uint32_t texture_source_formats[] = { DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID };
+static const uint32_t texture_source_formats[] = { DRM_FORMAT_NV12, DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID };
 
 struct i915_device {
 	uint32_t gen;
@@ -572,7 +572,7 @@ static uint32_t i915_resolve_format(uint32_t format, uint64_t use_flags)
 		/* KBL camera subsystem requires NV12. */
 		if (use_flags & (BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE))
 			return DRM_FORMAT_NV12;
-		return DRM_FORMAT_YVU420;
+		return DRM_FORMAT_NV12;
 	default:
 		return format;
 	}
