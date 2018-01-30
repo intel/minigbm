@@ -46,6 +46,10 @@ LOCAL_CFLAGS += -Wall -Wsign-compare -Wpointer-arith \
 		-D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64 \
 		-Wno-unused-value -Wno-unused-parameter
 
+LOCAL_C_INCLUDES += frameworks/native/libs/nativebase/include \
+                    frameworks/native/libs/nativewindow/include \
+                    frameworks/native/libs/arect/include \
+
 ifneq ($(filter $(intel_drivers), $(BOARD_GPU_DRIVERS)),)
 LOCAL_CPPFLAGS += -DDRV_I915
 LOCAL_CFLAGS += -DDRV_I915
