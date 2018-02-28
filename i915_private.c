@@ -24,7 +24,8 @@ static const uint32_t private_linear_source_formats[] = { DRM_FORMAT_R16,    DRM
 							  DRM_FORMAT_YUV420, DRM_FORMAT_YUV422,
 							  DRM_FORMAT_YUV444, DRM_FORMAT_NV21,
 							  DRM_FORMAT_P010, DRM_FORMAT_RGB888, DRM_FORMAT_BGR888,
-							  DRM_FORMAT_XRGB161616, DRM_FORMAT_XBGR161616 };
+							  DRM_FORMAT_XRGB161616, DRM_FORMAT_XBGR161616,
+							  DRM_FORMAT_ABGR2101010 };
 
 static const uint32_t private_source_formats[] = { DRM_FORMAT_P010, DRM_FORMAT_NV12_Y_TILED_INTEL };
 
@@ -154,6 +155,8 @@ uint32_t i915_private_bpp_from_format(uint32_t format, size_t plane)
         case DRM_FORMAT_XRGB161616:
         case DRM_FORMAT_XBGR161616:
                 return 64;
+        case DRM_FORMAT_ABGR2101010:
+                return 32;
 	}
 
 	fprintf(stderr, "drv: UNKNOWN FORMAT %d\n", format);
@@ -180,6 +183,7 @@ size_t i915_private_num_planes_from_format(uint32_t format)
 	case DRM_FORMAT_R16:
         case DRM_FORMAT_XRGB161616:
         case DRM_FORMAT_XBGR161616:
+	case DRM_FORMAT_ABGR2101010:
 		return 1;
 	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 	case DRM_FORMAT_NV16:
