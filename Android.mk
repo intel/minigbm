@@ -63,6 +63,7 @@ LOCAL_HEADER_LIBRARIES += libnativebase_headers libsystem_headers libhardware_he
 LOCAL_CFLAGS += -DUSE_VNDK
 endif
 
+LOCAL_CFLAGS += -Wno-error
 LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 # The preferred path for vendor HALs is /vendor/lib/hw
