@@ -12,6 +12,7 @@
 #include "cros_gralloc_types.h"
 
 #include <system/graphics.h>
+#include <system/graphics-sw.h>
 #ifdef USE_VNDK
 #include <vndk/window.h>
 #else
