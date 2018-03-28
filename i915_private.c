@@ -94,6 +94,7 @@ int i915_private_add_combinations(struct driver *drv)
 			       BO_USE_TEXTURE | BO_USE_CAMERA_MASK | BO_USE_RENDERING);
 	drv_modify_combination(drv, DRM_FORMAT_YVU420_ANDROID, &metadata,
 			       BO_USE_TEXTURE | BO_USE_CAMERA_MASK);
+	drv_modify_combination(drv, DRM_FORMAT_RGB565, &metadata, BO_USE_CAMERA_MASK);
 
 	/* Media/Camera expect these formats support. */
 	metadata.tiling = I915_TILING_NONE;
