@@ -9,7 +9,7 @@
 #include "i915_private_android.h"
 
 #include <cstdlib>
-#include <cutils/log.h>
+#include <log/log.h>
 #include <sync/sync.h>
 #include <error.h>
 #include <unistd.h>
