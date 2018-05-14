@@ -198,6 +198,8 @@ gralloc1_function_pointer_t CrosGralloc1::doGetFunction(int32_t intDescriptor)
 		return asFP<GRALLOC1_PFN_GET_STRIDE>(getStrideHook);
 	case GRALLOC1_FUNCTION_GET_BYTE_STRIDE:
 		return asFP<GRALLOC1_PFN_GET_BYTE_STRIDE>(getByteStrideHook);
+        case GRALLOC1_FUNCTION_GET_PRIME:
+                return asFP<GRALLOC1_PFN_GET_PRIME>(getPrimeHook);
 	case GRALLOC1_FUNCTION_ALLOCATE:
 		if (driver) {
 			return asFP<GRALLOC1_PFN_ALLOCATE>(allocateBuffers);
@@ -587,6 +589,17 @@ int32_t CrosGralloc1::getStride(buffer_handle_t buffer, uint32_t *outStride)
 	}
 
 	*outStride = hnd->pixel_stride;
+	return CROS_GRALLOC_ERROR_NONE;
+}
+
+int32_t CrosGralloc1::getPrime(buffer_handle_t buffer, uint32_t *prime)
+{
+	auto hnd = cros_gralloc_convert_handle(buffer);
+	if (!hnd) {
+		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+	}
+
+	*prime = hnd->fds[0];
 	return CROS_GRALLOC_ERROR_NONE;
 }
 
