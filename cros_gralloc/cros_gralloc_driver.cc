@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <xf86drm.h>
+#include <unistd.h>
 
 cros_gralloc_driver::cros_gralloc_driver() : drv_(nullptr)
 {
@@ -59,11 +60,14 @@ int32_t cros_gralloc_driver::init()
 				continue;
 
 			version = drmGetVersion(fd);
-			if (!version)
+			if (!version) {
+				close(fd);
 				continue;
+            }
 
 			if (undesired[i] && !strcmp(version->name, undesired[i])) {
 				drmFreeVersion(version);
+				close(fd);
 				continue;
 			}
 
