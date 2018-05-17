@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#include "i915_private_types.h"
+#include "i915_private.h"
 
 uint32_t i915_private_convert_format(int format);
 
