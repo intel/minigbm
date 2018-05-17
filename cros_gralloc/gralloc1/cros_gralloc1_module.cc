@@ -418,7 +418,6 @@ int32_t CrosGralloc1::lockFlex(buffer_handle_t bufferHandle,
 			       struct android_flex_layout *outData, int32_t acquireFence)
 {
 	int32_t ret = -EINVAL;
-	int32_t outReleaseFence = 0;
 	struct android_ycbcr ycbcrData;
 
 	/*Check the format and support only for YUV format */
