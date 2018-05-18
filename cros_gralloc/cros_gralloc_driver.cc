@@ -9,6 +9,7 @@
 
 #include "i915_private_android.h"
 
+#include <errno.h>
 #include <cstdlib>
 #include <fcntl.h>
 #include <xf86drm.h>

@@ -18,6 +18,7 @@
 #define LOG_TAG "CrosGralloc1 "
 //#define LOG_NDEBUG 0
 
+#include <errno.h>
 #include "cros_gralloc1_module.h"
 #include "drv.h"
 
