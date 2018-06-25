@@ -6,56 +6,7 @@
 
 #include "cros_gralloc_helpers.h"
 
-#include <cstdlib>
-#include <cutils/log.h>
-#include <fcntl.h>
-#include <xf86drm.h>
-
-uint64_t cros_gralloc_convert_flags(int flags)
-{
-	uint64_t usage = BO_USE_NONE;
-
-	if (flags & GRALLOC_USAGE_CURSOR)
-		usage |= BO_USE_NONE;
-	if ((flags & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_RARELY)
-		usage |= BO_USE_SW_READ_RARELY;
-	if ((flags & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_OFTEN)
-		usage |= BO_USE_SW_READ_OFTEN;
-	if ((flags & GRALLOC_USAGE_SW_WRITE_MASK) == GRALLOC_USAGE_SW_WRITE_RARELY)
-		usage |= BO_USE_SW_WRITE_RARELY;
-	if ((flags & GRALLOC_USAGE_SW_WRITE_MASK) == GRALLOC_USAGE_SW_WRITE_OFTEN)
-		usage |= BO_USE_SW_WRITE_OFTEN;
-	if (flags & GRALLOC_USAGE_HW_TEXTURE)
-		usage |= BO_USE_TEXTURE;
-	if (flags & GRALLOC_USAGE_HW_RENDER)
-		usage |= BO_USE_RENDERING;
-	if (flags & GRALLOC_USAGE_HW_2D)
-		usage |= BO_USE_RENDERING;
-	if (flags & GRALLOC_USAGE_HW_COMPOSER)
-		/* HWC wants to use display hardware, but can defer to OpenGL. */
-		usage |= BO_USE_SCANOUT | BO_USE_TEXTURE;
-	if (flags & GRALLOC_USAGE_HW_FB)
-		usage |= BO_USE_NONE;
-	if (flags & GRALLOC_USAGE_EXTERNAL_DISP)
-		/* We're ignoring this flag until we decide what to with display link */
-		usage |= BO_USE_NONE;
-	if (flags & GRALLOC_USAGE_PROTECTED)
-		usage |= BO_USE_PROTECTED;
-	if (flags & GRALLOC_USAGE_HW_VIDEO_ENCODER)
-		/*HACK: See b/30054495 */
-		usage |= BO_USE_SW_READ_OFTEN;
-	if (flags & GRALLOC_USAGE_HW_CAMERA_WRITE)
-		usage |= BO_USE_HW_CAMERA_WRITE;
-	if (flags & GRALLOC_USAGE_HW_CAMERA_READ)
-		usage |= BO_USE_HW_CAMERA_READ;
-	if (flags & GRALLOC_USAGE_HW_CAMERA_ZSL)
-		usage |= BO_USE_HW_CAMERA_ZSL;
-	if (flags & GRALLOC_USAGE_RENDERSCRIPT)
-		/* We use CPU for compute. */
-		usage |= BO_USE_LINEAR;
-
-	return usage;
-}
+#include <sync/sync.h>
 
 uint32_t cros_gralloc_convert_format(int format)
 {
@@ -72,7 +23,7 @@ uint32_t cros_gralloc_convert_format(int format)
 	case HAL_PIXEL_FORMAT_RGB_565:
 		return DRM_FORMAT_RGB565;
 	case HAL_PIXEL_FORMAT_RGB_888:
-		return DRM_FORMAT_RGB888;
+		return DRM_FORMAT_BGR888;
 	case HAL_PIXEL_FORMAT_RGBA_8888:
 		return DRM_FORMAT_ABGR8888;
 	case HAL_PIXEL_FORMAT_RGBX_8888:
@@ -93,80 +44,39 @@ uint32_t cros_gralloc_convert_format(int format)
 	return DRM_FORMAT_NONE;
 }
 
-static int32_t cros_gralloc_query_rendernode(struct driver **drv, const char *undesired)
+cros_gralloc_handle_t cros_gralloc_convert_handle(buffer_handle_t handle)
 {
+	auto hnd = reinterpret_cast<cros_gralloc_handle_t>(handle);
+	if (!hnd || hnd->magic != cros_gralloc_magic)
+		return nullptr;
+
+	return hnd;
+}
+
+int32_t cros_gralloc_sync_wait(int32_t acquire_fence)
+{
+	if (acquire_fence < 0)
+		return 0;
+
 	/*
-	 * Create a driver from rendernode while filtering out
-	 * the specified undesired driver.
-	 *
-	 * TODO(gsingh): Enable render nodes on udl/evdi.
+	 * Wait initially for 1000 ms, and then wait indefinitely. The SYNC_IOC_WAIT
+	 * documentation states the caller waits indefinitely on the fence if timeout < 0.
 	 */
-
-	int fd;
-	drmVersionPtr version;
-	char const *str = "%s/renderD%d";
-	int32_t num_nodes = 63;
-	int32_t min_node = 128;
-	int32_t max_node = (min_node + num_nodes);
-
-	for (int i = min_node; i < max_node; i++) {
-		char *node;
-
-		if (asprintf(&node, str, DRM_DIR_NAME, i) < 0)
-			continue;
-
-		fd = open(node, O_RDWR, 0);
-		free(node);
-
-		if (fd < 0)
-			continue;
-
-		version = drmGetVersion(fd);
-		if (!version)
-			continue;
-
-		if (undesired && !strcmp(version->name, undesired)) {
-			drmFreeVersion(version);
-			continue;
+	int err = sync_wait(acquire_fence, 1000);
+	if (err < 0) {
+		drv_log("Timed out on sync wait, err = %s\n", strerror(errno));
+		err = sync_wait(acquire_fence, -1);
+		if (err < 0) {
+			drv_log("sync wait error = %s\n", strerror(errno));
+			return -errno;
 		}
-
-		drmFreeVersion(version);
-		*drv = drv_create(fd);
-
-		if (*drv)
-			return CROS_GRALLOC_ERROR_NONE;
 	}
 
-	return CROS_GRALLOC_ERROR_NO_RESOURCES;
-}
+	err = close(acquire_fence);
+	if (err) {
+		drv_log("Unable to close fence fd, err = %s\n", strerror(errno));
+		return -errno;
+	}
 
-int32_t cros_gralloc_rendernode_open(struct driver **drv)
-{
-	int32_t ret;
-	ret = cros_gralloc_query_rendernode(drv, "vgem");
-
-	/* Allow vgem driver if no hardware is found. */
-	if (ret)
-		ret = cros_gralloc_query_rendernode(drv, NULL);
-
-	return ret;
-}
-
-int32_t cros_gralloc_validate_handle(struct cros_gralloc_handle *hnd)
-{
-	if (!hnd || hnd->magic != cros_gralloc_magic)
-		return CROS_GRALLOC_ERROR_BAD_HANDLE;
-
-	return CROS_GRALLOC_ERROR_NONE;
-}
-
-void cros_gralloc_log(const char *prefix, const char *file, int line, const char *format, ...)
-{
-	char buf[50];
-	snprintf(buf, sizeof(buf), "[%s:%s(%d)]", prefix, basename(file), line);
-
-	va_list args;
-	va_start(args, format);
-	__android_log_vprint(ANDROID_LOG_ERROR, buf, format, args);
-	va_end(args);
+	return 0;
 }

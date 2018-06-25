@@ -12,6 +12,6 @@ third_party {
     value: "https://chromium.googlesource.com/chromiumos/platform/minigbm/"
   }
   version: ""
-  last_upgrade_date { year: 2017 month: 6 day: 12 }
+  last_upgrade_date { year: 2018 month: 6 day: 25 }
   license_type: NOTICE
 }
