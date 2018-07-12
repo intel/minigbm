@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 The Chromium OS Authors. All rights reserved.
+ * Copyright 2017 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
@@ -10,7 +10,7 @@
 
 static const uint32_t render_target_formats[] = { DRM_FORMAT_ARGB8888, DRM_FORMAT_XRGB8888 };
 
-static int udl_init(struct driver *drv)
+static int radeon_init(struct driver *drv)
 {
 	drv_add_combinations(drv, render_target_formats, ARRAY_SIZE(render_target_formats),
 			     &LINEAR_METADATA, BO_USE_RENDER_MASK);
@@ -18,9 +18,9 @@ static int udl_init(struct driver *drv)
 	return drv_modify_linear_combinations(drv);
 }
 
-const struct backend backend_udl = {
-	.name = "udl",
-	.init = udl_init,
+const struct backend backend_radeon = {
+	.name = "radeon",
+	.init = radeon_init,
 	.bo_create = drv_dumb_bo_create,
 	.bo_destroy = drv_dumb_bo_destroy,
 	.bo_import = drv_prime_bo_import,
