@@ -61,7 +61,7 @@ include $(MINIGBM_GRALLOC_MK)
 LOCAL_CFLAGS := $(MINIGBM_CFLAGS)
 LOCAL_CPPFLAGS := $(MINIGBM_CPPFLAGS)
 
-LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
+LOCAL_MODULE := gralloc.minigbm
 LOCAL_MODULE_TAGS := optional
 # The preferred path for vendor HALs is /vendor/lib/hw
 LOCAL_PROPRIETARY_MODULE := true
