@@ -188,8 +188,8 @@ static int i915_add_combinations(struct driver *drv)
 	return 0;
 }
 
-static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *stride,
-				 uint32_t *aligned_height)
+static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint64_t modifier,
+				 uint32_t *stride, uint32_t *aligned_height)
 {
 	struct i915_device *i915 = bo->drv->priv;
 	uint32_t horizontal_alignment = 4;
@@ -199,6 +199,12 @@ static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *strid
 	default:
 	case I915_TILING_NONE:
 		horizontal_alignment = 64;
+		if (modifier == I915_FORMAT_MOD_Yf_TILED ||
+		    modifier == I915_FORMAT_MOD_Yf_TILED_CCS) {
+			horizontal_alignment = 128;
+			vertical_alignment = 32;
+		}
+
 		break;
 
 	case I915_TILING_X:
@@ -320,26 +326,26 @@ static int i915_bo_create_for_modifier(struct bo *bo, uint32_t width, uint32_t h
 		bo->tiling = I915_TILING_X;
 		break;
 	case I915_FORMAT_MOD_Y_TILED:
-        case I915_FORMAT_MOD_Y_TILED_CCS:
+	case I915_FORMAT_MOD_Y_TILED_CCS:
 		bo->tiling = I915_TILING_Y;
 		break;
 	}
 
 	stride = drv_stride_from_format(format, width, 0);
 
-        /*
-         * Align cursor width and height to values expected by Intel
-         * HW.
-         */
+	/*
+	 * Align cursor width and height to values expected by Intel
+	 * HW.
+	 */
 	if (bo->use_flags & BO_USE_CURSOR) {
-            width = ALIGN(width, i915_dev->cursor_width);
-            height = ALIGN(height, i915_dev->cursor_height);
-            stride = drv_stride_from_format(format, width, 0);
-        } else {
-            ret = i915_align_dimensions(bo, bo->tiling, &stride, &height);
-            if (ret)
-                return ret;
-        }
+		width = ALIGN(width, i915_dev->cursor_width);
+		height = ALIGN(height, i915_dev->cursor_height);
+		stride = drv_stride_from_format(format, width, 0);
+	} else {
+		ret = i915_align_dimensions(bo, bo->tiling, modifier, &stride, &height);
+		if (ret)
+			return ret;
+	}
 
 	/*
 	 * HAL_PIXEL_FORMAT_YV12 requires the buffer height not be aligned, but we need to keep
@@ -366,10 +372,11 @@ static int i915_bo_create_for_modifier(struct bo *bo, uint32_t width, uint32_t h
 		drv_bo_from_format(bo, stride, unaligned_height, format);
 		bo->total_size = total_size;
 	} else {
+
 		drv_bo_from_format(bo, stride, height, format);
 	}
 
-	if (modifier == I915_FORMAT_MOD_Y_TILED_CCS) {
+	if (modifier == I915_FORMAT_MOD_Y_TILED_CCS || modifier == I915_FORMAT_MOD_Yf_TILED_CCS) {
 		/*
 		 * For compressed surfaces, we need a color control surface
 		 * (CCS). Color compression is only supported for Y tiled
@@ -466,7 +473,8 @@ static int i915_bo_create_with_modifiers(struct bo *bo, uint32_t width, uint32_t
 					 uint32_t format, const uint64_t *modifiers, uint32_t count)
 {
 	static const uint64_t modifier_order[] = {
-		I915_FORMAT_MOD_Y_TILED, I915_FORMAT_MOD_Y_TILED_CCS, I915_FORMAT_MOD_X_TILED, DRM_FORMAT_MOD_LINEAR,
+		I915_FORMAT_MOD_Y_TILED,      I915_FORMAT_MOD_Yf_TILED, I915_FORMAT_MOD_Y_TILED_CCS,
+		I915_FORMAT_MOD_Yf_TILED_CCS, I915_FORMAT_MOD_X_TILED,  DRM_FORMAT_MOD_LINEAR,
 	};
 	uint64_t modifier;
 
