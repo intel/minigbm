@@ -221,6 +221,10 @@ gralloc1_function_pointer_t CrosGralloc1::doGetFunction(int32_t intDescriptor)
 		return asFP<GRALLOC1_PFN_UNLOCK>(unlockHook);
 	case GRALLOC1_FUNCTION_SET_MODIFIER:
 		return asFP<GRALLOC1_PFN_SET_MODIFIER>(setModifierHook);
+        case GRALLOC1_FUNCTION_SET_INTERLACE:
+                return asFP<GRALLOC1_PFN_SET_INTERLACE>(setInterlaceHook);
+        case GRALLOC1_FUNCTION_SET_PROTECTIONINFO:
+                return asFP<GRALLOC1_PFN_SET_PROTECTIONINFO>(setProtectionInfoHook);
 	case GRALLOC1_FUNCTION_INVALID:
 		ALOGE("Invalid function descriptor");
 		return nullptr;
@@ -281,6 +285,26 @@ int32_t CrosGralloc1::setFormat(gralloc1_buffer_descriptor_t descriptorId, int32
 	hnd->droid_format = format;
 	hnd->drm_format = cros_gralloc_convert_format(format);
 	return CROS_GRALLOC_ERROR_NONE;
+}
+
+int32_t CrosGralloc1::setInterlace(buffer_handle_t buffer, uint32_t interlace)
+{
+        auto hnd = (cros_gralloc_handle*) cros_gralloc_convert_handle(buffer);
+        if (!hnd) {
+                return CROS_GRALLOC_ERROR_BAD_HANDLE;
+        }
+        hnd->is_interlaced = interlace;
+        return CROS_GRALLOC_ERROR_NONE;
+}
+
+int32_t CrosGralloc1::setProtectionInfo(buffer_handle_t buffer, uint32_t protection_info)
+{
+        auto hnd = (cros_gralloc_handle*) cros_gralloc_convert_handle(buffer);
+        if (!hnd) {
+                return CROS_GRALLOC_ERROR_BAD_HANDLE;
+        }
+        hnd->is_encrypted = protection_info;
+        return CROS_GRALLOC_ERROR_NONE;
 }
 
 int32_t CrosGralloc1::setModifier(gralloc1_buffer_descriptor_t descriptorId, uint64_t modifier)
