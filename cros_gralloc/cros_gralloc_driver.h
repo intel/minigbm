@@ -33,6 +33,10 @@ class cros_gralloc_driver
 
 	int32_t get_backing_store(buffer_handle_t handle, uint64_t *out_store);
 
+	int32_t setinterlace(buffer_handle_t handle, uint32_t interlace);
+
+	int32_t getinterlace(buffer_handle_t handle, uint32_t *interlace);
+
       private:
 	cros_gralloc_driver(cros_gralloc_driver const &);
 	cros_gralloc_driver operator=(cros_gralloc_driver const &);
