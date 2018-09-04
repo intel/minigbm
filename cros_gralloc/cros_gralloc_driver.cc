@@ -9,11 +9,12 @@
 
 #include "i915_private_android.h"
 
-#include <errno.h>
 #include <cstdlib>
+#include <errno.h>
 #include <fcntl.h>
-#include <xf86drm.h>
+#include <i915_drm.h>
 #include <unistd.h>
+#include <xf86drm.h>
 
 cros_gralloc_driver::cros_gralloc_driver() : drv_(nullptr)
 {
@@ -170,10 +171,69 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	return 0;
 }
 
+int32_t cros_gralloc_driver::setinterlace(buffer_handle_t handle, uint32_t interlace)
+{
+	uint32_t id;
+	SCOPED_SPIN_LOCK(mutex_);
+
+	auto hnd = cros_gralloc_convert_handle(handle);
+	if (!hnd) {
+		cros_gralloc_error("Invalid handle.");
+		return -EINVAL;
+	}
+
+	if (drmPrimeFDToHandle(drv_get_fd(drv_), hnd->fds[0], &id)) {
+		cros_gralloc_error("drmPrimeFDToHandle failed.");
+		return -errno;
+	}
+
+	drm_i915_gem_access_userdata access_userdata;
+	access_userdata.handle = id;
+	access_userdata.write = 1;
+	access_userdata.userdata = interlace;
+
+	if (drmIoctl(drv_get_fd(drv_), DRM_IOCTL_I915_GEM_ACCESS_USERDATA, &access_userdata)) {
+		cros_gralloc_error("access userdata failed");
+		return -errno;
+	}
+
+	return 0;
+}
+
+int32_t cros_gralloc_driver::getinterlace(buffer_handle_t handle, uint32_t *interlace)
+{
+	uint32_t id;
+	SCOPED_SPIN_LOCK(mutex_);
+
+	auto hnd = cros_gralloc_convert_handle(handle);
+	if (!hnd) {
+		cros_gralloc_error("Invalid handle.");
+		return -EINVAL;
+	}
+
+	if (drmPrimeFDToHandle(drv_get_fd(drv_), hnd->fds[0], &id)) {
+		cros_gralloc_error("drmPrimeFDToHandle failed.");
+		return -errno;
+	}
+
+	drm_i915_gem_access_userdata access_userdata;
+	access_userdata.handle = id;
+	access_userdata.write = 0;
+	access_userdata.userdata = 0;
+
+	if (drmIoctl(drv_get_fd(drv_), DRM_IOCTL_I915_GEM_ACCESS_USERDATA, &access_userdata)) {
+		cros_gralloc_error("access userdata failed");
+		return -errno;
+	}
+	*interlace = access_userdata.userdata;
+
+	return 0;
+}
+
 int32_t cros_gralloc_driver::retain(buffer_handle_t handle)
 {
 	uint32_t id;
-        SCOPED_SPIN_LOCK(mutex_);
+	SCOPED_SPIN_LOCK(mutex_);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
