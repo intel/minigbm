@@ -98,9 +98,8 @@ class CrosGralloc1 : public gralloc1_device_t
 			      uint32_t height);
 
 	int32_t setFormat(gralloc1_buffer_descriptor_t descriptorId, int32_t format);
-	int32_t setInterlace(buffer_handle_t buffer, uint32_t interlace);
-	int32_t getInterlace(buffer_handle_t buffer, uint32_t *interlace);
-	int32_t setProtectionInfo(buffer_handle_t buffer, uint32_t protection_info);
+        int32_t setInterlace(buffer_handle_t buffer, uint32_t interlace);
+        int32_t setProtectionInfo(buffer_handle_t buffer, uint32_t protection_info);
 
 	int32_t createDescriptor(gralloc1_buffer_descriptor_t *outDescriptor);
 	static int32_t createDescriptorHook(gralloc1_device_t *device,
@@ -136,21 +135,15 @@ class CrosGralloc1 : public gralloc1_device_t
 		return getAdapter(device)->setFormat(descriptorId, format);
 	}
 
-	static int32_t setInterlaceHook(gralloc1_device_t *device, buffer_handle_t buffer,
-					uint32_t interlace)
-	{
-		return getAdapter(device)->setInterlace(buffer, interlace);
-	}
+        static int32_t setInterlaceHook(gralloc1_device_t *device,
+                                     buffer_handle_t buffer, uint32_t interlace)
+        {
+                return getAdapter(device)->setInterlace(buffer, interlace);
+        }
 
-	static int32_t getInterlaceHook(gralloc1_device_t *device, buffer_handle_t buffer,
-					uint32_t *interlace)
-	{
-		return getAdapter(device)->getInterlace(buffer, interlace);
-	}
-
-	static int32_t setProtectionInfoHook(gralloc1_device_t *device, buffer_handle_t buffer,
-					     uint32_t protection_info)
-	{
+        static int32_t setProtectionInfoHook(gralloc1_device_t *device,
+                                     buffer_handle_t buffer, uint32_t protection_info)
+        {
                 return getAdapter(device)->setProtectionInfo(buffer, protection_info);
         }
 

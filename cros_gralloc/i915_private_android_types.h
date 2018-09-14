@@ -69,7 +69,6 @@ enum { GRALLOC1_FUNCTION_SET_MODIFIER = 101,
        GRALLOC1_FUNCTION_GET_PRIME = 103,
        GRALLOC1_FUNCTION_SET_INTERLACE = 104,
        GRALLOC1_FUNCTION_SET_PROTECTIONINFO = 105,
-       GRALLOC1_FUNCTION_GET_INTERLACE = 106,
        GRALLOC1_LAST_CUSTOM = 500 };
 
 typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_SET_MODIFIER)(
@@ -81,17 +80,11 @@ typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_GET_BYTE_STRIDE)(
 typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_GET_PRIME)(
         gralloc1_device_t *device, buffer_handle_t buffer, uint32_t *prime);
 
-typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_SET_INTERLACE)(gralloc1_device_t *device,
-								   buffer_handle_t buffer,
-								   uint32_t interlace);
+typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_SET_INTERLACE)(
+        gralloc1_device_t *device, buffer_handle_t buffer, uint32_t interlace);
 
-typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_GET_INTERLACE)(gralloc1_device_t *device,
-								   buffer_handle_t buffer,
-								   uint32_t *interlace);
-
-typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_SET_PROTECTIONINFO)(gralloc1_device_t *device,
-									buffer_handle_t buffer,
-									uint32_t protection_info);
+typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_SET_PROTECTIONINFO)(
+        gralloc1_device_t *device, buffer_handle_t buffer, uint32_t protection_info);
 
 typedef union intel_protection_info_type_t {
        uint32_t value;
