@@ -34,8 +34,6 @@ uint32_t i915_private_convert_format(int format)
 		return DRM_FORMAT_YUV422;
 	case HAL_PIXEL_FORMAT_P010_INTEL:
 		return DRM_FORMAT_P010;
-	case HAL_PIXEL_FORMAT_RGBA_FP16:
-		return DRM_FORMAT_XBGR161616;
 	case HAL_PIXEL_FORMAT_RGBA_1010102:
 		return DRM_FORMAT_ABGR2101010;
 	}
@@ -81,8 +79,6 @@ int32_t i915_private_invert_format(int format)
 		return HAL_PIXEL_FORMAT_YCbCr_422_SP;
 	case DRM_FORMAT_YUV422:
 		return HAL_PIXEL_FORMAT_YCbCr_422_888;
-	case DRM_FORMAT_XBGR161616:
-		return HAL_PIXEL_FORMAT_RGBA_FP16;
 	case DRM_FORMAT_ABGR2101010:
 		return HAL_PIXEL_FORMAT_RGBA_1010102;
 	default:
