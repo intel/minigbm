@@ -104,6 +104,9 @@ struct backend {
 	                    BO_USE_SW_READ_OFTEN | BO_USE_SW_WRITE_OFTEN | \
                             BO_USE_SW_READ_RARELY | BO_USE_SW_WRITE_RARELY | BO_USE_TEXTURE
 
+#define BO_USE_SW_MASK BO_USE_SW_READ_OFTEN | BO_USE_SW_WRITE_OFTEN | \
+                       BO_USE_SW_READ_RARELY | BO_USE_SW_WRITE_RARELY
+
 #define LINEAR_METADATA (struct format_metadata) { 0, 1, DRM_FORMAT_MOD_NONE }
 // clang-format on
 

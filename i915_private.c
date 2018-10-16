@@ -23,7 +23,9 @@
 static const uint32_t private_linear_source_formats[] = { DRM_FORMAT_R16,    DRM_FORMAT_NV16,
 							  DRM_FORMAT_YUV420, DRM_FORMAT_YUV422,
 							  DRM_FORMAT_YUV444, DRM_FORMAT_NV21,
-							  DRM_FORMAT_P010, DRM_FORMAT_RGB888, DRM_FORMAT_BGR888 };
+							  DRM_FORMAT_P010 };
+
+static const uint32_t private_rgb24_formats[] = { DRM_FORMAT_RGB888, DRM_FORMAT_BGR888 };
 
 static const uint32_t private_source_formats[] = { DRM_FORMAT_P010, DRM_FORMAT_NV12_Y_TILED_INTEL };
 
@@ -107,6 +109,10 @@ int i915_private_add_combinations(struct driver *drv)
 	metadata.modifier = I915_FORMAT_MOD_Y_TILED;
 	drv_add_combinations(drv, private_source_formats, ARRAY_SIZE(private_source_formats),
 			     &metadata, texture_flags | BO_USE_CAMERA_MASK);
+
+        /* Android CTS tests require this. */
+        drv_add_combinations(drv, private_rgb24_formats, ARRAY_SIZE(private_rgb24_formats),
+                             &metadata, BO_USE_SW_MASK);
 
 	texture_flags &= ~BO_USE_RENDERSCRIPT;
 	texture_flags &= ~BO_USE_SW_WRITE_OFTEN;
