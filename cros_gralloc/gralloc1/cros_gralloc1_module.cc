@@ -405,10 +405,10 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 	return CROS_GRALLOC_ERROR_NONE;
 }
 
+android_flex_plane_t ycbcrplanes[3];
+
 int32_t update_flex_layout(struct android_ycbcr *ycbcr, struct android_flex_layout *outFlexLayout)
 {
-	android_flex_plane_t *ycbcrplanes = outFlexLayout->planes;
-
 	outFlexLayout->format = FLEX_FORMAT_YCbCr;
 	outFlexLayout->num_planes = 3;
 	for (uint32_t i = 0; i < outFlexLayout->num_planes; i++) {
@@ -431,6 +431,7 @@ int32_t update_flex_layout(struct android_ycbcr *ycbcr, struct android_flex_layo
 	ycbcrplanes[2].h_increment = static_cast<int32_t>(ycbcr->chroma_step);
 	ycbcrplanes[2].v_increment = static_cast<int32_t>(ycbcr->cstride);
 
+	outFlexLayout->planes = ycbcrplanes;
 	return 0;
 }
 
@@ -538,13 +539,7 @@ int32_t CrosGralloc1::getNumFlexPlanes(buffer_handle_t buffer, uint32_t *outNumP
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if (IsSupportedYUVFormat(hnd->droid_format)) {
-		// for YUV formats flex_lock should provide 3 planes (logical)
-		*outNumPlanes = 3;
-	} else { // otherwise count of physical planes for backward compatibility
-		*outNumPlanes = drv_num_planes_from_format(hnd->droid_format);
-	}
-
+	*outNumPlanes = drv_num_planes_from_format(hnd->format);
 	return CROS_GRALLOC_ERROR_NONE;
 }
 
@@ -642,15 +637,12 @@ int32_t CrosGralloc1::getByteStride(buffer_handle_t buffer, uint32_t *outStride,
         return CROS_GRALLOC_ERROR_BAD_HANDLE;
     }
 
-    // size is acquired caller through getNumFlexPlanes,
-    // it returns count of logical planes, might be bigger than needed
-    auto num_planes = drv_num_planes_from_format(hnd->format);
-    if (size < num_planes) {
+    if (size != drv_num_planes_from_format(hnd->format)) {
         ALOGE("Invalid array size- %d", size);
         return -EINVAL;
     }
 
-    memcpy(outStride, hnd->strides, sizeof(*outStride) * num_planes);
+    memcpy(outStride, hnd->strides, sizeof(*outStride) * size);
     return CROS_GRALLOC_ERROR_NONE;
 }
 
