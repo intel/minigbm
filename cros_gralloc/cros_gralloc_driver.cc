@@ -240,11 +240,21 @@ int32_t cros_gralloc_driver::release(buffer_handle_t handle)
 
 	auto buffer = get_buffer(hnd);
 	if (!buffer) {
-		cros_gralloc_error("Invalid Reference.");
-		return -EINVAL;
+		uint32_t id = -1;
+		if (drmPrimeFDToHandle(drv_get_fd(drv_), hnd->fds[0], &id)) {
+			cros_gralloc_error("drmPrimeFDToHandle failed.");
+			return -errno;
+		}
+		if (buffers_.count(id)) {
+			buffer = buffers_[id];
+			buffer->increase_refcount();
+		}
+		else {
+			cros_gralloc_error("Could not found reference");
+			return -EINVAL;
+		}
 	}
-
-	if (!--handles_[hnd].second)
+	else if (!--handles_[hnd].second)
 		handles_.erase(hnd);
 
 	if (buffer->decrease_refcount() == 0) {
