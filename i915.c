@@ -327,6 +327,8 @@ static int i915_bo_create_for_modifier(struct bo *bo, uint32_t width, uint32_t h
 		break;
 	case I915_FORMAT_MOD_Y_TILED:
 	case I915_FORMAT_MOD_Y_TILED_CCS:
+        case I915_FORMAT_MOD_Yf_TILED:
+        case I915_FORMAT_MOD_Yf_TILED_CCS:
 		bo->tiling = I915_TILING_Y;
 		break;
 	}
