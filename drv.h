@@ -147,6 +147,8 @@ uint32_t drv_resolve_format(struct driver *drv, uint32_t format, uint64_t use_fl
 
 size_t drv_num_planes_from_format(uint32_t format);
 
+int32_t drv_bytes_in_pixel_from_format(uint32_t format);
+
 uint32_t drv_num_buffers_per_bo(struct bo *bo);
 
 #ifdef __cplusplus

@@ -219,6 +219,8 @@ class CrosGralloc1 : public gralloc1_device_t
 		return getAdapter(device)->getByteStride(buffer, outStride, size);
 	}
 
+	bool IsSupported(struct cros_gralloc_buffer_descriptor *descriptor);
+
 	// Buffer Management functions
 	int32_t allocate(struct cros_gralloc_buffer_descriptor *descriptor,
 			 buffer_handle_t *outBufferHandle);
@@ -241,6 +243,12 @@ class CrosGralloc1 : public gralloc1_device_t
 	int32_t lock(buffer_handle_t bufferHandle, gralloc1_producer_usage_t producerUsage,
 		     gralloc1_consumer_usage_t consumerUsage, const gralloc1_rect_t &accessRegion,
 		     void **outData, int32_t acquireFence);
+
+	int32_t lock(buffer_handle_t bufferHandle, gralloc1_producer_usage_t producerUsage,
+		     gralloc1_consumer_usage_t consumerUsage, const gralloc1_rect_t &accessRegion,
+		     void **outData, int32_t acquireFence, int32_t *bytesPerPixel,
+		     int32_t *bytesPerStride);
+
 	int32_t lockFlex(buffer_handle_t bufferHandle, gralloc1_producer_usage_t producerUsage,
 			 gralloc1_consumer_usage_t consumerUsage,
 			 const gralloc1_rect_t &accessRegion, struct android_flex_layout *outFlex,
