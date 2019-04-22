@@ -29,6 +29,8 @@ static const uint32_t private_rgb24_formats[] = { DRM_FORMAT_RGB888, DRM_FORMAT_
 
 static const uint32_t private_source_formats[] = { DRM_FORMAT_P010, DRM_FORMAT_NV12_Y_TILED_INTEL };
 
+static const uint32_t private_64bit_format[] = { DRM_FORMAT_ABGR2101010, DRM_FORMAT_XBGR161616 };
+
 #if !defined(DRM_CAP_CURSOR_WIDTH)
 #define DRM_CAP_CURSOR_WIDTH 0x8
 #endif
@@ -104,6 +106,12 @@ int i915_private_add_combinations(struct driver *drv)
 			     ARRAY_SIZE(private_linear_source_formats), &metadata,
 			     texture_flags | BO_USE_CAMERA_MASK);
 
+        metadata.tiling = I915_TILING_NONE;
+        metadata.priority = 1;
+        metadata.modifier = DRM_FORMAT_MOD_NONE;
+        drv_add_combinations(drv, private_64bit_format, ARRAY_SIZE(private_64bit_format), &metadata,
+                             BO_USE_SCANOUT | BO_USE_RENDERING | BO_USE_TEXTURE);
+
 	metadata.tiling = I915_TILING_Y;
 	metadata.priority = 3;
 	metadata.modifier = I915_FORMAT_MOD_Y_TILED;
@@ -157,6 +165,10 @@ uint32_t i915_private_bpp_from_format(uint32_t format, size_t plane)
 		return 8;
 	case DRM_FORMAT_R16:
 		return 16;
+        case DRM_FORMAT_ABGR2101010:
+                return 32;
+        case DRM_FORMAT_XBGR161616:
+                return 64;
 	}
 
 	fprintf(stderr, "drv: UNKNOWN FORMAT %d\n", format);
@@ -181,6 +193,8 @@ size_t i915_private_num_planes_from_format(uint32_t format)
 {
 	switch (format) {
 	case DRM_FORMAT_R16:
+        case DRM_FORMAT_ABGR2101010:
+        case DRM_FORMAT_XBGR161616:
 		return 1;
 	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 	case DRM_FORMAT_NV16:
