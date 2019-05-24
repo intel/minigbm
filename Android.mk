@@ -6,7 +6,7 @@ ifeq ($(strip $(BOARD_USES_MINIGBM)), true)
 
 MINIGBM_GRALLOC_MK := $(call my-dir)/Android.gralloc.mk
 LOCAL_PATH := $(call my-dir)
-intel_drivers := i915 i965
+intel_drivers := i915 i965 iris
 include $(CLEAR_VARS)
 
 SUBDIRS := cros_gralloc
