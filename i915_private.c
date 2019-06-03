@@ -83,7 +83,7 @@ int i915_private_add_combinations(struct driver *drv)
 
 	drv_modify_combination(drv, DRM_FORMAT_ABGR8888, &metadata, BO_USE_CURSOR | BO_USE_SCANOUT);
 	drv_modify_combination(drv, DRM_FORMAT_NV12, &metadata,
-			       BO_USE_RENDERING | BO_USE_TEXTURE | BO_USE_CAMERA_MASK);
+			       BO_USE_TEXTURE | BO_USE_CAMERA_MASK);
 	drv_modify_combination(drv, DRM_FORMAT_YUYV, &metadata,
 			       BO_USE_TEXTURE | BO_USE_CAMERA_MASK | BO_USE_RENDERING);
 	drv_modify_combination(drv, DRM_FORMAT_VYUY, &metadata,
