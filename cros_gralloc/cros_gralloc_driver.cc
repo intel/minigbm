@@ -73,8 +73,12 @@ int32_t cros_gralloc_driver::init()
 
 			drmFreeVersion(version);
 			drv_ = drv_create(fd);
-			if (drv_)
+			if (drv_) {
+        close(fd);
 				return 0;
+      }
+
+      close(fd);
 		}
 	}
 
