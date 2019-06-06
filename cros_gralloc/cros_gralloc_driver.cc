@@ -9,11 +9,11 @@
 
 #include "i915_private_android.h"
 
-#include <errno.h>
 #include <cstdlib>
+#include <errno.h>
 #include <fcntl.h>
-#include <xf86drm.h>
 #include <unistd.h>
+#include <xf86drm.h>
 
 cros_gralloc_driver::cros_gralloc_driver() : drv_(nullptr)
 {
@@ -63,7 +63,7 @@ int32_t cros_gralloc_driver::init()
 			if (!version) {
 				close(fd);
 				continue;
-            }
+			}
 
 			if (undesired[i] && !strcmp(version->name, undesired[i])) {
 				drmFreeVersion(version);
@@ -74,11 +74,11 @@ int32_t cros_gralloc_driver::init()
 			drmFreeVersion(version);
 			drv_ = drv_create(fd);
 			if (drv_) {
-        close(fd);
+				close(fd);
 				return 0;
-      }
+			}
 
-      close(fd);
+			close(fd);
 		}
 	}
 
@@ -157,7 +157,7 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	hnd->magic = cros_gralloc_magic;
 	int32_t format = i915_private_invert_format(hnd->format);
 	if (format == 0) {
-		format =  descriptor->droid_format;
+		format = descriptor->droid_format;
 	}
 	hnd->droid_format = format;
 	hnd->usage = descriptor->producer_usage;
@@ -167,7 +167,7 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	id = drv_bo_get_plane_handle(bo, 0).u32;
 	auto buffer = new cros_gralloc_buffer(id, bo, hnd);
 
-        SCOPED_SPIN_LOCK(mutex_);
+	SCOPED_SPIN_LOCK(mutex_);
 	buffers_.emplace(id, buffer);
 	handles_.emplace(hnd, std::make_pair(buffer, 1));
 	*out_handle = &hnd->base;
@@ -177,7 +177,7 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 int32_t cros_gralloc_driver::retain(buffer_handle_t handle)
 {
 	uint32_t id;
-        SCOPED_SPIN_LOCK(mutex_);
+	SCOPED_SPIN_LOCK(mutex_);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
@@ -234,7 +234,7 @@ int32_t cros_gralloc_driver::retain(buffer_handle_t handle)
 
 int32_t cros_gralloc_driver::release(buffer_handle_t handle)
 {
-        SCOPED_SPIN_LOCK(mutex_);
+	SCOPED_SPIN_LOCK(mutex_);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
@@ -252,13 +252,11 @@ int32_t cros_gralloc_driver::release(buffer_handle_t handle)
 		if (buffers_.count(id)) {
 			buffer = buffers_[id];
 			buffer->increase_refcount();
-		}
-		else {
+		} else {
 			cros_gralloc_error("Could not found reference");
 			return -EINVAL;
 		}
-	}
-	else if (!--handles_[hnd].second)
+	} else if (!--handles_[hnd].second)
 		handles_.erase(hnd);
 
 	if (buffer->decrease_refcount() == 0) {
@@ -294,7 +292,8 @@ int32_t cros_gralloc_driver::lock(buffer_handle_t handle, int32_t acquire_fence,
 
 int32_t cros_gralloc_driver::unlock(buffer_handle_t handle, int32_t *release_fence)
 {
-        SCOPED_SPIN_LOCK(mutex_);;
+	SCOPED_SPIN_LOCK(mutex_);
+	;
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
@@ -320,7 +319,7 @@ int32_t cros_gralloc_driver::unlock(buffer_handle_t handle, int32_t *release_fen
 
 int32_t cros_gralloc_driver::get_backing_store(buffer_handle_t handle, uint64_t *out_store)
 {
-        SCOPED_SPIN_LOCK(mutex_);
+	SCOPED_SPIN_LOCK(mutex_);
 
 	auto hnd = cros_gralloc_convert_handle(handle);
 	if (!hnd) {
