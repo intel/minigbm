@@ -167,6 +167,8 @@ void drv_destroy(struct driver *drv)
 {
 	ATOMIC_LOCK(&drv->driver_lock);
 
+       close(drv->fd);
+
 	if (drv->backend->close)
 		drv->backend->close(drv);
 
