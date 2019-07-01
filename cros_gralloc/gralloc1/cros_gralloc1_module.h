@@ -190,6 +190,31 @@ class CrosGralloc1 : public gralloc1_device_t
 		return getAdapter(device)->getFormat(buffer, outFormat);
 	}
 
+	int32_t validateBufferSize(buffer_handle_t buffer,
+				   const gralloc1_buffer_descriptor_info_t *descriptorInfo,
+				   uint32_t stride);
+	static int32_t
+	validateBufferSizeHook(gralloc1_device_t *device, buffer_handle_t buffer,
+			       const gralloc1_buffer_descriptor_info_t *descriptorInfo,
+			       uint32_t stride)
+	{
+		return getAdapter(device)->validateBufferSize(buffer, descriptorInfo, stride);
+	}
+
+	int32_t getTransportSize(buffer_handle_t buffer, uint32_t *outNumFds, uint32_t *outNumInts);
+	static int32_t getTransportSizeHook(gralloc1_device_t *device, buffer_handle_t buffer,
+					    uint32_t *outNumFds, uint32_t *outNumInts)
+	{
+		return getAdapter(device)->getTransportSize(buffer, outNumFds, outNumInts);
+	}
+
+	int32_t importBuffer(const buffer_handle_t rawHandle, buffer_handle_t *outBuffer);
+	static int32_t importBufferHook(gralloc1_device_t *device, const buffer_handle_t rawHandle,
+					buffer_handle_t *outBuffer)
+	{
+		return getAdapter(device)->importBuffer(rawHandle, outBuffer);
+	}
+
 	int32_t getProducerUsage(buffer_handle_t buffer,
 				 uint64_t * /*gralloc1_producer_usage_t*/ outUsage);
 	static int32_t getProducerUsageHook(gralloc1_device_t *device, buffer_handle_t buffer,
