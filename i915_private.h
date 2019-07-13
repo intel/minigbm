@@ -36,6 +36,7 @@ struct driver;
 /* 64 bpp RGB */
 #define DRM_FORMAT_XRGB161616  fourcc_code('X', 'R', '4', '8') /* [63:0] x:R:G:B 16:16:16:16 little endian */
 #define DRM_FORMAT_XBGR161616  fourcc_code('X', 'B', '4', '8') /* [63:0] x:B:G:R 16:16:16:16 little endian */
+#define DRM_FORMAT_ABGR16161616F  fourcc_code('A', 'B', '4', 'H') /* [63:0] x:B:G:R 16:16:16:16 little endian */
 
 int i915_private_init(struct driver *drv, uint64_t *cursor_width, uint64_t *cursor_height);
 
