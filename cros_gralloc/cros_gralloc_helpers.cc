@@ -106,3 +106,15 @@ void cros_gralloc_log(const char *prefix, const char *file, int line, const char
 	__android_log_vprint(ANDROID_LOG_ERROR, buf, format, args);
 	va_end(args);
 }
+
+bool is_flex_format(uint32_t format)
+{
+	switch (format) {
+	case DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED:
+	case DRM_FORMAT_FLEX_YCbCr_420_888:
+		return true;
+	default:
+		return false;
+	}
+	return false;
+}
