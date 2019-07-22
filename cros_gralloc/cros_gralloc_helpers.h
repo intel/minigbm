@@ -29,6 +29,8 @@ cros_gralloc_handle_t cros_gralloc_convert_handle(buffer_handle_t handle);
 
 int32_t cros_gralloc_sync_wait(int32_t acquire_fence);
 
+bool cros_gralloc_is_video(uint32_t format);
+
 __attribute__((format(printf, 4, 5))) void cros_gralloc_log(const char *prefix, const char *file,
 							    int line, const char *format, ...);
 

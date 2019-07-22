@@ -322,7 +322,8 @@ int32_t CrosGralloc1::validateBufferSize(buffer_handle_t buffer,
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if (cros_gralloc_convert_format(descriptorInfo->format) != hnd->format) {
+	if (!cros_gralloc_is_video(hnd->format) &&
+	    cros_gralloc_convert_format(descriptorInfo->format) != hnd->format) {
 		return CROS_GRALLOC_ERROR_BAD_VALUE;
 	}
 

@@ -106,3 +106,22 @@ void cros_gralloc_log(const char *prefix, const char *file, int line, const char
 	__android_log_vprint(ANDROID_LOG_ERROR, buf, format, args);
 	va_end(args);
 }
+
+bool cros_gralloc_is_video(uint32_t format)
+{
+	switch (format) {
+	case DRM_FORMAT_AYUV:
+	case DRM_FORMAT_UYVY:
+	case DRM_FORMAT_VYUY:
+	case DRM_FORMAT_YUYV:
+	case DRM_FORMAT_YVYU:
+	case DRM_FORMAT_NV12:
+	case DRM_FORMAT_NV21:
+	case DRM_FORMAT_YVU420:
+	case DRM_FORMAT_YVU420_ANDROID:
+		return true;
+	default:
+		return false;
+	}
+	return false;
+}
