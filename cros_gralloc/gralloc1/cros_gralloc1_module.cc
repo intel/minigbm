@@ -17,7 +17,6 @@
 #undef LOG_TAG
 #define LOG_TAG "CrosGralloc1 "
 //#define LOG_NDEBUG 0
-
 #include <errno.h>
 #include "cros_gralloc1_module.h"
 #include "drv.h"
@@ -357,14 +356,14 @@ int32_t CrosGralloc1::importBuffer(const buffer_handle_t rawHandle, buffer_handl
 		*outBuffer = NULL;
 		return GRALLOC1_ERROR_BAD_HANDLE;
 	}
-	buffer_handle_t buffer_handle = native_handle_clone(rawHandle);
+	native_handle_t* buffer_handle = native_handle_clone(rawHandle);
 	if (!buffer_handle) {
 		*outBuffer = NULL;
 		return GRALLOC1_ERROR_NO_RESOURCES;
 	}
 	auto error = retain(buffer_handle);
 	if (error != GRALLOC1_ERROR_NONE) {
-		delete buffer_handle;
+		native_handle_delete(buffer_handle);
 		*outBuffer = NULL;
 		return error;
 	}
