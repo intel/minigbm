@@ -29,8 +29,6 @@ static const uint32_t private_rgb24_formats[] = { DRM_FORMAT_RGB888, DRM_FORMAT_
 
 static const uint32_t private_source_formats[] = { DRM_FORMAT_P010, DRM_FORMAT_NV12_Y_TILED_INTEL };
 
-static const uint32_t private_rgba_format[] = { DRM_FORMAT_ABGR2101010, DRM_FORMAT_ABGR16161616F };
-
 #if !defined(DRM_CAP_CURSOR_WIDTH)
 #define DRM_CAP_CURSOR_WIDTH 0x8
 #endif
@@ -109,8 +107,10 @@ int i915_private_add_combinations(struct driver *drv)
         metadata.tiling = I915_TILING_NONE;
         metadata.priority = 1;
         metadata.modifier = DRM_FORMAT_MOD_NONE;
-        drv_add_combinations(drv, private_rgba_format, ARRAY_SIZE(private_rgba_format), &metadata,
-                             BO_USE_SW_WRITE_OFTEN | BO_USE_SCANOUT);
+	drv_add_combination(drv, DRM_FORMAT_ABGR2101010, &metadata,
+                             BO_USE_SCANOUT);
+        drv_add_combination(drv, DRM_FORMAT_ABGR16161616F, &metadata,
+                             BO_USE_SCANOUT | BO_USE_TEXTURE | BO_USE_RENDERING);
 
 	metadata.tiling = I915_TILING_Y;
 	metadata.priority = 3;
