@@ -423,6 +423,8 @@ struct gralloc0_module HAL_MODULE_INFO_SYM = {
 		.lockAsync = gralloc0_lock_async,
 		.unlockAsync = gralloc0_unlock_async,
 		.lockAsync_ycbcr = gralloc0_lock_async_ycbcr,
+                .validateBufferSize = NULL,
+                .getTransportSize = NULL,
 	    },
 
 	.alloc = nullptr,
