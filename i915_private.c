@@ -108,7 +108,8 @@ int i915_private_add_combinations(struct driver *drv)
         metadata.priority = 1;
         metadata.modifier = DRM_FORMAT_MOD_NONE;
 	drv_add_combination(drv, DRM_FORMAT_ABGR2101010, &metadata,
-                             BO_USE_SCANOUT);
+                             BO_USE_SCANOUT | BO_USE_TEXTURE |
+                             BO_USE_RENDERING | BO_USE_SW_MASK);
         drv_add_combination(drv, DRM_FORMAT_ABGR16161616F, &metadata,
                              BO_USE_SCANOUT | BO_USE_TEXTURE | BO_USE_RENDERING);
 
