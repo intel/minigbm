@@ -390,13 +390,6 @@ int32_t CrosGralloc1::allocate(struct cros_gralloc_buffer_descriptor *descriptor
 	descriptor->use_flags = usage;
 	bool supported = driver->is_supported(descriptor);
 
-	if(!supported && (descriptor->drm_format == DRM_FORMAT_ABGR2101010 ||
-	    descriptor->drm_format == DRM_FORMAT_ABGR16161616F)){
-		descriptor->use_flags &= ~BO_USE_RENDERING;
-		descriptor->use_flags &= ~BO_USE_TEXTURE;
-		supported = driver->is_supported(descriptor);
-        }
-
 	if (!supported && (descriptor->consumer_usage & GRALLOC1_CONSUMER_USAGE_HWCOMPOSER)) {
 		descriptor->use_flags &= ~BO_USE_SCANOUT;
 		supported = driver->is_supported(descriptor);
