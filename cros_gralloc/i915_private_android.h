@@ -1,0 +1,19 @@
+/*
+ * Copyright 2017 The Chromium OS Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+#ifdef DRV_I915
+
+#include <stdint.h>
+
+#include "i915_private.h"
+
+uint32_t i915_private_convert_format(int format);
+
+int32_t i915_private_invert_format(int format);
+
+bool i915_private_supported_yuv_format(uint32_t droid_format);
+
+#endif

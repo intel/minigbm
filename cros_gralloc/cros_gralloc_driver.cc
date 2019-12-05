@@ -56,18 +56,27 @@ int32_t cros_gralloc_driver::init()
 				continue;
 
 			version = drmGetVersion(fd);
-			if (!version)
+			if (!version) {
+				close(fd);
 				continue;
+			}
 
 			if (undesired[i] && !strcmp(version->name, undesired[i])) {
 				drmFreeVersion(version);
+				close(fd);
 				continue;
 			}
 
 			drmFreeVersion(version);
 			drv_ = drv_create(fd);
-			if (drv_)
+
+			if (drv_) {
 				return 0;
+			}
+			else {
+				close(fd);
+				continue;
+			}
 		}
 	}
 
@@ -232,12 +241,22 @@ int32_t cros_gralloc_driver::release(buffer_handle_t handle)
 
 	auto buffer = get_buffer(hnd);
 	if (!buffer) {
-		drv_log("Invalid Reference.\n");
-		return -EINVAL;
+		uint32_t id = -1;
+		if (drmPrimeFDToHandle(drv_get_fd(drv_), hnd->fds[0], &id)) {
+			drv_log("drmPrimeFDToHandle failed.");
+			return -errno;
+		}
+		if (buffers_.count(id)) {
+			buffer = buffers_[id];
+			buffer->increase_refcount();
+		} else {
+			drv_log("Could not found reference");
+			return -EINVAL;
+		}
 	}
-
-	if (!--handles_[hnd].second)
+	else if (!--handles_[hnd].second) {
 		handles_.erase(hnd);
+	}
 
 	if (buffer->decrease_refcount() == 0) {
 		buffers_.erase(buffer->get_id());
