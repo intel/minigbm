@@ -2,36 +2,21 @@
 // found in the LICENSE file.
 
 cc_defaults {
-    name: "gralloc.minigbm_intel_defaults",
+    name: "gralloc.minigbm_intel_defaults_pri",
     cflags: ["-DDRV_I915"],
 }
 
 cc_defaults {
-    name: "gralloc.minigbm_meson_defaults",
-    cflags: ["-DDRV_MESON"],
-}
-
-cc_defaults {
-    name: "gralloc.minigbm_defaults",
+    name: "gralloc.minigbm_defaults_pri",
 
     srcs: [
-        "amdgpu.c",
         "drv.c",
         "evdi.c",
-        "exynos.c",
         "helpers_array.c",
         "helpers.c",
         "i915.c",
-        "marvell.c",
-        "mediatek.c",
-        "meson.c",
-        "msm.c",
         "nouveau.c",
-        "radeon.c",
-        "rockchip.c",
-        "tegra.c",
         "udl.c",
-        "vc4.c",
         "vgem.c",
         "virtio_gpu.c",
 
@@ -76,15 +61,10 @@ cc_defaults {
 }
 
 cc_library_shared {
-    name: "gralloc.minigbm",
-    defaults: ["gralloc.minigbm_defaults"],
-}
-
-cc_library_shared {
-    name: "gralloc.minigbm_intel",
+    name: "gralloc.intel",
     defaults: [
-        "gralloc.minigbm_defaults",
-        "gralloc.minigbm_intel_defaults",
+        "gralloc.minigbm_defaults_pri",
+        "gralloc.minigbm_intel_defaults_pri",
     ],
     enabled: false,
     arch: {
@@ -95,26 +75,4 @@ cc_library_shared {
             enabled: true,
         },
     },
-}
-
-cc_library_shared {
-    name: "gralloc.minigbm_meson",
-    defaults: [
-        "gralloc.minigbm_defaults",
-        "gralloc.minigbm_meson_defaults",
-    ],
-}
-
-cc_library_shared {
-    name: "libminigbm",
-    defaults: ["gralloc.minigbm_defaults"],
-    shared_libs: ["liblog"],
-    static_libs: ["libdrm"],
-
-    srcs: [
-        "gbm.c",
-        "gbm_helpers.c",
-    ],
-
-    export_include_dirs: ["."],
 }
