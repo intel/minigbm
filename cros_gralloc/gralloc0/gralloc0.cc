@@ -5,6 +5,7 @@
  */
 
 #include "../cros_gralloc_driver.h"
+#include "../i915_private_android.h"
 
 #include <cassert>
 #include <hardware/gralloc.h>
@@ -115,7 +116,7 @@ static int gralloc0_alloc(alloc_device_t *dev, int w, int h, int format, int usa
 	if (!supported) {
 		drv_log("Unsupported combination -- HAL format: %u, HAL usage: %u, "
 			"drv_format: %4.4s, use_flags: %llu\n",
-			format, usage, reinterpret_cast<char *>(&descriptor.drm_format),
+			format, usage, drmFormat2Str(descriptor.drm_format),
 			static_cast<unsigned long long>(descriptor.use_flags));
 		return -EINVAL;
 	}
@@ -179,13 +180,15 @@ static int gralloc0_open(const struct hw_module_t *mod, const char *name, struct
 		return 0;
 	}
 
-	if (strcmp(name, GRALLOC_HARDWARE_GPU0)) {
+	if (strcmp(name, GRALLOC_HARDWARE_GPU0) != 0 && strcmp(name, GRALLOC_HARDWARE_MODULE_ID) != 0) {
 		drv_log("Incorrect device name - %s.\n", name);
 		return -EINVAL;
 	}
 
-	if (gralloc0_init(module, true))
+	if (gralloc0_init(module, true)) {
+        drv_log("gralloc0_init failed");
 		return -ENODEV;
+    }
 
 	*dev = &module->alloc->common;
 	return 0;
@@ -372,6 +375,7 @@ static int gralloc0_lock_async_ycbcr(struct gralloc_module_t const *module, buff
 
 	switch (hnd->format) {
 	case DRM_FORMAT_NV12:
+	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 		ycbcr->y = addr[0];
 		ycbcr->cb = addr[1];
 		ycbcr->cr = addr[1] + 1;

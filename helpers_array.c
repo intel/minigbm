@@ -33,17 +33,22 @@ struct drv_array *drv_array_init(uint32_t item_size)
 
 void *drv_array_append(struct drv_array *array, void *data)
 {
-	void *item;
+	void *item = NULL;
 
 	if (array->size >= array->allocations) {
 		void **new_items = NULL;
 		array->allocations *= 2;
 		new_items = realloc(array->items, array->allocations * sizeof(*array->items));
-		assert(new_items);
+		if (!new_items) {
+			return NULL;
+		}
 		array->items = new_items;
 	}
 
 	item = calloc(1, array->item_size);
+	if (!item) {
+		return NULL;
+	}
 	memcpy(item, data, array->item_size);
 	array->items[array->size] = item;
 	array->size++;

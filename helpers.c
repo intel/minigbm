@@ -17,6 +17,7 @@
 #include "drv_priv.h"
 #include "helpers.h"
 #include "util.h"
+#include "i915_private.h"
 
 struct planar_layout {
 	size_t num_planes;
@@ -55,6 +56,13 @@ static const struct planar_layout packed_4bpp_layout = {
 	.bytes_per_pixel = { 4 }
 };
 
+static const struct planar_layout packed_8bpp_layout = {
+	.num_planes = 1,
+	.horizontal_subsampling = { 1 },
+	.vertical_subsampling = { 1 },
+	.bytes_per_pixel = { 8 }
+};
+
 static const struct planar_layout biplanar_yuv_420_layout = {
 	.num_planes = 2,
 	.horizontal_subsampling = { 1, 2 },
@@ -69,7 +77,40 @@ static const struct planar_layout triplanar_yuv_420_layout = {
 	.bytes_per_pixel = { 1, 1, 1 }
 };
 
+static const struct planar_layout biplanar_ycrcb_420_layout = {
+	.num_planes = 2,
+	.horizontal_subsampling = { 1, 2 },
+	.vertical_subsampling = { 1, 2 },
+	.bytes_per_pixel = { 2, 4 }
+};
+
 // clang-format on
+
+static const struct planar_layout* layout_from_format_i915_private(uint32_t format)
+{
+    assert(plane < drv_num_planes_from_format(format));
+
+    switch (format) {
+    case DRM_FORMAT_NV12_Y_TILED_INTEL:
+		return &biplanar_yuv_420_layout;
+    case DRM_FORMAT_P010:
+		return &biplanar_ycrcb_420_layout;
+    case DRM_FORMAT_YUV420:
+    case DRM_FORMAT_YUV422:
+    case DRM_FORMAT_YUV444:
+    case DRM_FORMAT_NV16:
+		return &triplanar_yuv_420_layout;
+    case DRM_FORMAT_R16:
+		return &packed_2bpp_layout;
+    case DRM_FORMAT_ABGR2101010:
+		return &packed_4bpp_layout;
+    case DRM_FORMAT_ABGR16161616F:
+		return &packed_8bpp_layout;
+    }
+
+    fprintf(stderr, "drv: UNKNOWN FORMAT %d\n", format);
+    return NULL;
+}
 
 static const struct planar_layout *layout_from_format(uint32_t format)
 {
@@ -136,11 +177,9 @@ static const struct planar_layout *layout_from_format(uint32_t format)
 	case DRM_FORMAT_XRGB2101010:
 	case DRM_FORMAT_XRGB8888:
 		return &packed_4bpp_layout;
-
-	default:
-		drv_log("UNKNOWN FORMAT %d\n", format);
-		return NULL;
 	}
+
+	return layout_from_format_i915_private(format);
 }
 
 size_t drv_num_planes_from_format(uint32_t format)
@@ -489,18 +528,22 @@ uint32_t drv_log_base2(uint32_t value)
 	return ret;
 }
 
-void drv_add_combinations(struct driver *drv, const uint32_t *formats, uint32_t num_formats,
+int drv_add_combinations(struct driver *drv, const uint32_t *formats, uint32_t num_formats,
 			  struct format_metadata *metadata, uint64_t use_flags)
 {
-	uint32_t i;
+	int ret    = 0;
+	uint32_t i = 0;
 
 	for (i = 0; i < num_formats; i++) {
 		struct combination combo = { .format = formats[i],
 					     .metadata = *metadata,
 					     .use_flags = use_flags };
 
-		drv_array_append(drv->combos, &combo);
+		if (!drv_array_append(drv->combos, &combo)) {
+			return -ENOMEM;
+		}
 	}
+	return ret;
 }
 
 void drv_modify_combination(struct driver *drv, uint32_t format, struct format_metadata *metadata,

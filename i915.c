@@ -18,6 +18,7 @@
 #include "drv_priv.h"
 #include "helpers.h"
 #include "util.h"
+#include "i915_private.h"
 
 #define I915_CACHELINE_SIZE 64
 #define I915_CACHELINE_MASK (I915_CACHELINE_SIZE - 1)
@@ -114,7 +115,7 @@ static int i915_add_kms_item(struct driver *drv, const struct kms_item *item)
 
 static int i915_add_combinations(struct driver *drv)
 {
-	int ret;
+	int ret = 0;
 	uint32_t i;
 	struct drv_array *kms_items;
 	struct format_metadata metadata;
@@ -127,15 +128,24 @@ static int i915_add_combinations(struct driver *drv)
 	metadata.priority = 1;
 	metadata.modifier = DRM_FORMAT_MOD_LINEAR;
 
-	drv_add_combinations(drv, render_target_formats, ARRAY_SIZE(render_target_formats),
-			     &metadata, render_use_flags);
+	ret = drv_add_combinations(drv, render_target_formats, ARRAY_SIZE(render_target_formats),
+				&metadata, render_use_flags);
+	if (ret) {
+		return ret;
+	}
 
-	drv_add_combinations(drv, texture_source_formats, ARRAY_SIZE(texture_source_formats),
+	ret = drv_add_combinations(drv, texture_source_formats, ARRAY_SIZE(texture_source_formats),
 			     &metadata, texture_use_flags);
+	if (ret) {
+		return ret;
+	}
 
-	drv_add_combinations(drv, tileable_texture_source_formats,
+	ret = drv_add_combinations(drv, tileable_texture_source_formats,
 			     ARRAY_SIZE(tileable_texture_source_formats), &metadata,
 			     texture_use_flags);
+	if (ret) {
+		return ret;
+	}
 
 	drv_modify_combination(drv, DRM_FORMAT_XRGB8888, &metadata, BO_USE_CURSOR | BO_USE_SCANOUT);
 	drv_modify_combination(drv, DRM_FORMAT_ARGB8888, &metadata, BO_USE_CURSOR | BO_USE_SCANOUT);
@@ -164,28 +174,45 @@ static int i915_add_combinations(struct driver *drv)
 	metadata.priority = 2;
 	metadata.modifier = I915_FORMAT_MOD_X_TILED;
 
-	drv_add_combinations(drv, render_target_formats, ARRAY_SIZE(render_target_formats),
+	ret = drv_add_combinations(drv, render_target_formats, ARRAY_SIZE(render_target_formats),
 			     &metadata, render_use_flags);
+	if (ret) {
+		return ret;
+	}
 
-	drv_add_combinations(drv, tileable_texture_source_formats,
+	ret = drv_add_combinations(drv, tileable_texture_source_formats,
 			     ARRAY_SIZE(tileable_texture_source_formats), &metadata,
 			     texture_use_flags);
+	if (ret) {
+		return ret;
+	}
 
 	metadata.tiling = I915_TILING_Y;
 	metadata.priority = 3;
 	metadata.modifier = I915_FORMAT_MOD_Y_TILED;
 
-	drv_add_combinations(drv, render_target_formats, ARRAY_SIZE(render_target_formats),
+	ret = drv_add_combinations(drv, render_target_formats, ARRAY_SIZE(render_target_formats),
 			     &metadata, render_use_flags);
+	if (ret) {
+		return ret;
+	}
 
-	drv_add_combinations(drv, tileable_texture_source_formats,
+	ret = drv_add_combinations(drv, tileable_texture_source_formats,
 			     ARRAY_SIZE(tileable_texture_source_formats), &metadata,
 			     texture_use_flags);
+	if (ret) {
+		return ret;
+	}
 
 	/* Support y-tiled NV12 for libva */
 	const uint32_t nv12_format = DRM_FORMAT_NV12;
-	drv_add_combinations(drv, &nv12_format, 1, &metadata,
+	ret = drv_add_combinations(drv, &nv12_format, 1, &metadata,
 			     BO_USE_TEXTURE | BO_USE_HW_VIDEO_DECODER);
+	if (ret) {
+		return ret;
+	}
+
+    i915_private_add_combinations(drv);
 
 	kms_items = drv_query_kms(drv);
 	if (!kms_items)
@@ -239,6 +266,23 @@ static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *strid
 		}
 		break;
 	}
+
+	/*
+	 * The alignment calculated above is based on the full size luma plane and to have chroma
+	 * planes properly aligned with subsampled formats, we need to multiply luma alignment by
+	 * subsampling factor.
+	 */
+	switch (bo->format) {
+	case DRM_FORMAT_YVU420_ANDROID:
+	case DRM_FORMAT_YVU420:
+		horizontal_alignment *= 2;
+	/* Fall through */
+	case DRM_FORMAT_NV12:
+		vertical_alignment *= 2;
+		break;
+	}
+
+	i915_private_align_dimensions(bo->format, &vertical_alignment);
 
 	*aligned_height = ALIGN(bo->height, vertical_alignment);
 	if (i915->gen > 3) {
@@ -545,6 +589,11 @@ static int i915_bo_flush(struct bo *bo, struct mapping *mapping)
 
 static uint32_t i915_resolve_format(uint32_t format, uint64_t use_flags)
 {
+	uint32_t resolved_format;
+	if (i915_private_resolve_format(format, use_flags, &resolved_format)) {
+	    return resolved_format;
+	}
+
 	switch (format) {
 	case DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED:
 		/* KBL camera subsystem requires NV12. */
