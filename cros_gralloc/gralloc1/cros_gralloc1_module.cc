@@ -379,6 +379,26 @@ int32_t CrosGralloc1::setModifier(gralloc1_buffer_descriptor_t descriptorId, uin
 	return CROS_GRALLOC_ERROR_NONE;
 }
 
+bool CrosGralloc1::IsSupported(struct cros_gralloc_buffer_descriptor *descriptor)
+{
+	uint64_t usage =
+	    cros_gralloc1_convert_usage(descriptor->producer_usage, descriptor->consumer_usage);
+	descriptor->use_flags = usage;
+	bool supported = driver->is_supported(descriptor);
+	if (!supported && (descriptor->consumer_usage & GRALLOC1_CONSUMER_USAGE_HWCOMPOSER)) {
+		descriptor->use_flags &= ~BO_USE_SCANOUT;
+		supported = driver->is_supported(descriptor);
+	}
+
+	if (!supported) {
+		cros_gralloc_error("Unsupported combination -- HAL format: %u, HAL flags: %u, "
+				   "drv_format: %u, drv_flags: %llu",
+				   descriptor->droid_format, usage, descriptor->drm_format,
+				   static_cast<unsigned long long>(descriptor->use_flags));
+	}
+	return supported;
+}
+
 int32_t CrosGralloc1::allocate(struct cros_gralloc_buffer_descriptor *descriptor,
 			       buffer_handle_t *outBufferHandle)
 {
@@ -467,6 +487,32 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 
 	*outData = addr[0];
+
+	return CROS_GRALLOC_ERROR_NONE;
+}
+
+int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage_t producerUsage,
+			   gralloc1_consumer_usage_t consumerUsage,
+			   const gralloc1_rect_t &accessRegion, void **outData,
+			   int32_t acquireFence, int32_t *bytesPerPixel, int32_t *bytesPerStride)
+{
+	uint64_t map_flags;
+	uint8_t *addr[DRV_MAX_PLANES];
+
+	auto hnd = cros_gralloc_convert_handle(bufferHandle);
+	if (!hnd) {
+		cros_gralloc_error("Invalid handle.");
+		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+	}
+
+	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
+
+	if (driver->lock(bufferHandle, acquireFence, map_flags, addr))
+		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+
+	*outData = addr[0];
+	*bytesPerPixel = drv_bytes_in_pixel_from_format(hnd->format);
+	*bytesPerStride = (*bytesPerPixel) * (int32_t)(hnd->pixel_stride);
 
 	return CROS_GRALLOC_ERROR_NONE;
 }

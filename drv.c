@@ -617,6 +617,11 @@ size_t drv_num_planes_from_format(uint32_t format)
 	return i915_private_num_planes_from_format(format);
 }
 
+int32_t drv_bytes_in_pixel_from_format(uint32_t format)
+{
+	return drv_bytes_from_format(format);
+}
+
 uint32_t drv_num_buffers_per_bo(struct bo *bo)
 {
 	uint32_t count = 0;
