@@ -117,7 +117,7 @@ static const struct backend *drv_get_backend(int fd)
 #ifdef DRV_VC4
 		&backend_vc4,
 #endif
-		&backend_vgem,	   &backend_virtio_gpu,
+		&backend_vgem,	    &backend_virtio_gpu,
 	};
 
 	for (i = 0; i < ARRAY_SIZE(backend_list); i++) {
@@ -558,6 +558,21 @@ int drv_bo_invalidate(struct bo *bo, struct mapping *mapping)
 	return ret;
 }
 
+int drv_bo_flush(struct bo *bo, struct mapping *mapping)
+{
+	int ret = 0;
+
+	assert(mapping);
+	assert(mapping->vma);
+	assert(mapping->refcount > 0);
+	assert(mapping->vma->refcount > 0);
+
+	if (bo->drv->backend->bo_flush)
+		ret = bo->drv->backend->bo_flush(bo, mapping);
+
+	return ret;
+}
+
 int drv_bo_flush_or_unmap(struct bo *bo, struct mapping *mapping)
 {
 	int ret = 0;
@@ -646,6 +661,11 @@ uint64_t drv_bo_get_plane_format_modifier(struct bo *bo, size_t plane)
 uint32_t drv_bo_get_format(struct bo *bo)
 {
 	return bo->meta.format;
+}
+
+size_t drv_bo_get_total_size(struct bo *bo)
+{
+	return bo->meta.total_size;
 }
 
 uint32_t drv_resolve_format(struct driver *drv, uint32_t format, uint64_t use_flags)

@@ -42,10 +42,11 @@
 	} while (0)
 
 /* Private API enumeration -- see <gralloc_drm.h> */
-enum { GRALLOC_DRM_GET_STRIDE,
-       GRALLOC_DRM_GET_FORMAT,
-       GRALLOC_DRM_GET_DIMENSIONS,
-       GRALLOC_DRM_GET_BACKING_STORE,
+enum {
+	GRALLOC_DRM_GET_STRIDE,
+	GRALLOC_DRM_GET_FORMAT,
+	GRALLOC_DRM_GET_DIMENSIONS,
+	GRALLOC_DRM_GET_BACKING_STORE,
 };
 
 struct gralloctest_context {

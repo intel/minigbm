@@ -69,7 +69,7 @@ enum virgl_formats {
 
    VIRGL_FORMAT_R8_UNORM                = 64,
    VIRGL_FORMAT_R8G8_UNORM              = 65,
-
+   VIRGL_FORMAT_R8G8B8_UNORM            = 66,
    VIRGL_FORMAT_R8G8B8A8_UNORM          = 67,
 
    VIRGL_FORMAT_R8_SNORM                = 74,
