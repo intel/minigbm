@@ -6,14 +6,15 @@
 
 #ifdef DRV_AMDGPU
 
-typedef int GLint;
-typedef unsigned int GLuint;
-typedef unsigned char GLboolean;
-
+// Avoid transitively including a bunch of unnecessary headers.
+#define GL_GLEXT_LEGACY
 #include "GL/internal/dri_interface.h"
+#undef GL_GLEXT_LEGACY
+
 #include "drv.h"
 
 struct dri_driver {
+	int fd;
 	void *driver_handle;
 	__DRIscreen *device;
 	__DRIcontext *context; /* Needed for map/unmap operations. */

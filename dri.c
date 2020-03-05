@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -87,6 +88,21 @@ static int import_into_minigbm(struct dri_driver *dri, struct bo *bo)
 }
 
 /*
+ * Close Gem Handle
+ */
+static void close_gem_handle(uint32_t handle, int fd)
+{
+	struct drm_gem_close gem_close;
+	int ret = 0;
+
+	memset(&gem_close, 0, sizeof(gem_close));
+	gem_close.handle = handle;
+	ret = drmIoctl(fd, DRM_IOCTL_GEM_CLOSE, &gem_close);
+	if (ret)
+		drv_log("DRM_IOCTL_GEM_CLOSE failed (handle=%x) error %d\n", handle, ret);
+}
+
+/*
  * The caller is responsible for setting drv->priv to a structure that derives from dri_driver.
  */
 int dri_init(struct driver *drv, const char *dri_so_path, const char *driver_suffix)
@@ -96,9 +112,14 @@ int dri_init(struct driver *drv, const char *dri_so_path, const char *driver_suf
 	const __DRIextension *loader_extensions[] = { NULL };
 
 	struct dri_driver *dri = drv->priv;
+
+	dri->fd = open(drmGetRenderDeviceNameFromFd(drv_get_fd(drv)), O_RDWR);
+	if (dri->fd < 0)
+		return -ENODEV;
+
 	dri->driver_handle = dlopen(dri_so_path, RTLD_NOW | RTLD_GLOBAL);
 	if (!dri->driver_handle)
-		return -ENODEV;
+		goto close_dri_fd;
 
 	snprintf(fname, sizeof(fname), __DRI_DRIVER_GET_EXTENSIONS "_%s", driver_suffix);
 	get_extensions = dlsym(dri->driver_handle, fname);
@@ -118,7 +139,7 @@ int dri_init(struct driver *drv, const char *dri_so_path, const char *driver_suf
 			      (const __DRIextension **)&dri->dri2_extension))
 		goto free_handle;
 
-	dri->device = dri->dri2_extension->createNewScreen2(0, drv_get_fd(drv), loader_extensions,
+	dri->device = dri->dri2_extension->createNewScreen2(0, dri->fd, loader_extensions,
 							    dri->extensions, &dri->configs, NULL);
 	if (!dri->device)
 		goto free_handle;
@@ -146,6 +167,8 @@ free_screen:
 free_handle:
 	dlclose(dri->driver_handle);
 	dri->driver_handle = NULL;
+close_dri_fd:
+	close(dri->fd);
 	return -ENODEV;
 }
 
@@ -160,6 +183,7 @@ void dri_close(struct driver *drv)
 	dri->core_extension->destroyScreen(dri->device);
 	dlclose(dri->driver_handle);
 	dri->driver_handle = NULL;
+	close(dri->fd);
 }
 
 int dri_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32_t format,
@@ -167,9 +191,10 @@ int dri_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32_t forma
 {
 	unsigned int dri_use;
 	int ret, dri_format, stride, offset;
+	int modifier_upper, modifier_lower;
 	struct dri_driver *dri = bo->drv->priv;
 
-	assert(bo->num_planes == 1);
+	assert(bo->meta.num_planes == 1);
 	dri_format = drm_format_to_dri_format(format);
 
 	/* Gallium drivers require shared to get the handle and stride. */
@@ -194,20 +219,32 @@ int dri_bo_create(struct bo *bo, uint32_t width, uint32_t height, uint32_t forma
 
 	if (!dri->image_extension->queryImage(bo->priv, __DRI_IMAGE_ATTRIB_STRIDE, &stride)) {
 		ret = -errno;
-		goto free_image;
+		goto close_handle;
 	}
 
 	if (!dri->image_extension->queryImage(bo->priv, __DRI_IMAGE_ATTRIB_OFFSET, &offset)) {
 		ret = -errno;
-		goto free_image;
+		goto close_handle;
 	}
 
-	bo->strides[0] = stride;
-	bo->sizes[0] = stride * height;
-	bo->offsets[0] = offset;
-	bo->total_size = offset + bo->sizes[0];
+	if (dri->image_extension->queryImage(bo->priv, __DRI_IMAGE_ATTRIB_MODIFIER_UPPER,
+					     &modifier_upper) &&
+	    dri->image_extension->queryImage(bo->priv, __DRI_IMAGE_ATTRIB_MODIFIER_LOWER,
+					     &modifier_lower)) {
+		bo->meta.format_modifiers[0] =
+		    ((uint64_t)modifier_upper << 32) | (uint32_t)modifier_lower;
+	} else {
+		bo->meta.format_modifiers[0] = DRM_FORMAT_MOD_INVALID;
+	}
+
+	bo->meta.strides[0] = stride;
+	bo->meta.sizes[0] = stride * height;
+	bo->meta.offsets[0] = offset;
+	bo->meta.total_size = offset + bo->meta.sizes[0];
 	return 0;
 
+close_handle:
+	close_gem_handle(bo->handles[0].u32, bo->drv->fd);
 free_image:
 	dri->image_extension->destroyImage(bo->priv);
 	return ret;
@@ -218,11 +255,12 @@ int dri_bo_import(struct bo *bo, struct drv_import_fd_data *data)
 	int ret;
 	struct dri_driver *dri = bo->drv->priv;
 
-	assert(bo->num_planes == 1);
+	assert(bo->meta.num_planes == 1);
 
 	// clang-format off
 	bo->priv = dri->image_extension->createImageFromFds(dri->device, data->width, data->height,
-							    data->format, data->fds, bo->num_planes,
+							    data->format, data->fds,
+							    bo->meta.num_planes,
 							    (int *)data->strides,
 							    (int *)data->offsets, NULL);
 	// clang-format on
@@ -243,6 +281,7 @@ int dri_bo_destroy(struct bo *bo)
 	struct dri_driver *dri = bo->drv->priv;
 
 	assert(bo->priv);
+	close_gem_handle(bo->handles[0].u32, bo->drv->fd);
 	dri->image_extension->destroyImage(bo->priv);
 	bo->priv = NULL;
 	return 0;
@@ -262,9 +301,9 @@ void *dri_bo_map(struct bo *bo, struct vma *vma, size_t plane, uint32_t map_flag
 	struct dri_driver *dri = bo->drv->priv;
 
 	/* GBM flags and DRI flags are the same. */
-	vma->addr =
-	    dri->image_extension->mapImage(dri->context, bo->priv, 0, 0, bo->width, bo->height,
-					   map_flags, (int *)&vma->map_strides[plane], &vma->priv);
+	vma->addr = dri->image_extension->mapImage(dri->context, bo->priv, 0, 0, bo->meta.width,
+						   bo->meta.height, map_flags,
+						   (int *)&vma->map_strides[plane], &vma->priv);
 	if (!vma->addr)
 		return MAP_FAILED;
 

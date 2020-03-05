@@ -21,8 +21,10 @@ cros_gralloc_driver::~cros_gralloc_driver()
 	handles_.clear();
 
 	if (drv_) {
+		int fd = drv_get_fd(drv_);
 		drv_destroy(drv_);
 		drv_ = nullptr;
+		close(fd);
 	}
 }
 
@@ -56,10 +58,13 @@ int32_t cros_gralloc_driver::init()
 				continue;
 
 			version = drmGetVersion(fd);
-			if (!version)
+			if (!version) {
+				close(fd);
 				continue;
+			}
 
 			if (undesired[i] && !strcmp(version->name, undesired[i])) {
+				close(fd);
 				drmFreeVersion(version);
 				continue;
 			}
@@ -68,6 +73,8 @@ int32_t cros_gralloc_driver::init()
 			drv_ = drv_create(fd);
 			if (drv_)
 				return 0;
+
+			close(fd);
 		}
 	}
 
@@ -106,6 +113,15 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	 */
 	if (resolved_format == DRM_FORMAT_NV12)
 		use_flags |= BO_USE_LINEAR;
+
+	/*
+	 * This unmask is a backup in the case DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED is resolved
+	 * to non-YUV formats.
+	 */
+	if (descriptor->drm_format == DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED &&
+	    (resolved_format == DRM_FORMAT_XBGR8888 || resolved_format == DRM_FORMAT_ABGR8888)) {
+		use_flags &= ~BO_USE_HW_VIDEO_ENCODER;
+	}
 
 	bo = drv_bo_create(drv_, descriptor->width, descriptor->height, resolved_format, use_flags);
 	if (!bo) {
