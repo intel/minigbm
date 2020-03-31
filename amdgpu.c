@@ -159,8 +159,7 @@ static int amdgpu_create_bo_linear(struct bo *bo, uint32_t width, uint32_t heigh
 		gem_create.in.domain_flags |= AMDGPU_GEM_CREATE_CPU_ACCESS_REQUIRED;
 
 	gem_create.in.domains = AMDGPU_GEM_DOMAIN_GTT;
-	if (!(use_flags & (BO_USE_SW_READ_OFTEN | BO_USE_SCANOUT)))
-		gem_create.in.domain_flags |= AMDGPU_GEM_CREATE_CPU_GTT_USWC;
+	gem_create.in.domain_flags |= AMDGPU_GEM_CREATE_CPU_GTT_USWC;
 
 	/* Allocate the buffer with the preferred heap. */
 	ret = drmCommandWriteRead(drv_get_fd(bo->drv), DRM_AMDGPU_GEM_CREATE, &gem_create,
