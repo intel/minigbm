@@ -159,11 +159,7 @@ static int amdgpu_create_bo_linear(struct bo *bo, uint32_t width, uint32_t heigh
 		gem_create.in.domain_flags |= AMDGPU_GEM_CREATE_CPU_ACCESS_REQUIRED;
 
 	gem_create.in.domains = AMDGPU_GEM_DOMAIN_GTT;
-
-	/* Scanout in GTT requires USWC, otherwise try to use cachable memory
-	 * for buffers that are read often, because uncacheable reads can be
-	 * very slow. USWC should be faster on the GPU though. */
-	if ((use_flags & BO_USE_SCANOUT) || !(use_flags & BO_USE_SW_READ_OFTEN))
+	if (!(use_flags & (BO_USE_SW_READ_OFTEN | BO_USE_SCANOUT)))
 		gem_create.in.domain_flags |= AMDGPU_GEM_CREATE_CPU_GTT_USWC;
 
 	/* Allocate the buffer with the preferred heap. */
