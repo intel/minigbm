@@ -33,6 +33,11 @@ enum {
 };
 // clang-format on
 
+// Gralloc0 doesn't define a video decoder flag. However, the IAllocator gralloc0
+// passthrough gives the low 32-bits of the BufferUsage flags to gralloc0 in their
+// entirety, so we can detect the video decoder flag passed by IAllocator clients.
+#define BUFFER_USAGE_VIDEO_DECODER (1 << 22)
+
 static uint64_t gralloc0_convert_usage(int usage)
 {
 	uint64_t use_flags = BO_USE_NONE;
@@ -66,15 +71,19 @@ static uint64_t gralloc0_convert_usage(int usage)
 		use_flags |= BO_USE_NONE;
 	if (usage & GRALLOC_USAGE_PROTECTED)
 		use_flags |= BO_USE_PROTECTED;
-	if (usage & GRALLOC_USAGE_HW_VIDEO_ENCODER)
+	if (usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
+		use_flags |= BO_USE_HW_VIDEO_ENCODER;
 		/*HACK: See b/30054495 */
 		use_flags |= BO_USE_SW_READ_OFTEN;
+	}
 	if (usage & GRALLOC_USAGE_HW_CAMERA_WRITE)
 		use_flags |= BO_USE_CAMERA_WRITE;
 	if (usage & GRALLOC_USAGE_HW_CAMERA_READ)
 		use_flags |= BO_USE_CAMERA_READ;
 	if (usage & GRALLOC_USAGE_RENDERSCRIPT)
 		use_flags |= BO_USE_RENDERSCRIPT;
+	if (usage & BUFFER_USAGE_VIDEO_DECODER)
+		use_flags |= BO_USE_HW_VIDEO_DECODER;
 
 	return use_flags;
 }
@@ -89,6 +98,13 @@ static uint32_t gralloc0_convert_map_usage(int map_usage)
 		map_flags |= BO_MAP_WRITE;
 
 	return map_flags;
+}
+
+static int gralloc0_droid_yuv_format(int droid_format)
+{
+
+	return (droid_format == HAL_PIXEL_FORMAT_YCbCr_420_888 ||
+		droid_format == HAL_PIXEL_FORMAT_YV12);
 }
 
 static int gralloc0_alloc(alloc_device_t *dev, int w, int h, int format, int usage,
@@ -109,6 +125,14 @@ static int gralloc0_alloc(alloc_device_t *dev, int w, int h, int format, int usa
 	supported = mod->driver->is_supported(&descriptor);
 	if (!supported && (usage & GRALLOC_USAGE_HW_COMPOSER)) {
 		descriptor.use_flags &= ~BO_USE_SCANOUT;
+		supported = mod->driver->is_supported(&descriptor);
+	}
+	if (!supported && (usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) &&
+	    !gralloc0_droid_yuv_format(format)) {
+		// Unmask BO_USE_HW_VIDEO_ENCODER in the case of non-yuv formats
+		// because they are not input to a hw encoder but used as an
+		// intermediate format (e.g. camera).
+		descriptor.use_flags &= ~BO_USE_HW_VIDEO_ENCODER;
 		supported = mod->driver->is_supported(&descriptor);
 	}
 
@@ -353,9 +377,8 @@ static int gralloc0_lock_async_ycbcr(struct gralloc_module_t const *module, buff
 		return -EINVAL;
 	}
 
-	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED)) {
+	if (!gralloc0_droid_yuv_format(hnd->droid_format) &&
+	    hnd->droid_format != HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
 		drv_log("Non-YUV format not compatible.\n");
 		return -EINVAL;
 	}
