@@ -414,7 +414,8 @@ static int gralloc0_lock_async_ycbcr(struct gralloc_module_t const *module, buff
 			return ret;
 
 		for (uint32_t plane = 0; plane < DRV_MAX_PLANES; plane++)
-			addr[plane] = static_cast<uint8_t *>(nullptr) + offsets[plane];
+			addr[plane] =
+			    reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(offsets[plane]));
 	}
 
 	switch (hnd->format) {
