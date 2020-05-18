@@ -54,6 +54,9 @@ extern const struct backend backend_radeon;
 #ifdef DRV_ROCKCHIP
 extern const struct backend backend_rockchip;
 #endif
+#ifdef DRV_SYNAPTICS
+extern const struct backend backend_synaptics;
+#endif
 #ifdef DRV_TEGRA
 extern const struct backend backend_tegra;
 #endif
@@ -104,6 +107,9 @@ static const struct backend *drv_get_backend(int fd)
 #ifdef DRV_ROCKCHIP
 		&backend_rockchip,
 #endif
+#ifdef DRV_SYNAPTICS
+		&backend_synaptics,
+#endif
 #ifdef DRV_TEGRA
 		&backend_tegra,
 #endif
@@ -111,7 +117,7 @@ static const struct backend *drv_get_backend(int fd)
 #ifdef DRV_VC4
 		&backend_vc4,
 #endif
-		&backend_vgem,     &backend_virtio_gpu,
+		&backend_vgem,	   &backend_virtio_gpu,
 	};
 
 	for (i = 0; i < ARRAY_SIZE(backend_list); i++) {
@@ -278,11 +284,8 @@ struct bo *drv_bo_create(struct driver *drv, uint32_t width, uint32_t height, ui
 	if (drv->backend->bo_compute_metadata) {
 		ret = drv->backend->bo_compute_metadata(bo, width, height, format, use_flags, NULL,
 							0);
-		if (!is_test_alloc && ret == 0) {
+		if (!is_test_alloc && ret == 0)
 			ret = drv->backend->bo_create_from_metadata(bo);
-			if (ret == 0)
-				return bo;
-		}
 	} else if (!is_test_alloc) {
 		ret = drv->backend->bo_create(bo, width, height, format, use_flags);
 	}
@@ -687,4 +690,18 @@ void drv_log_prefix(const char *prefix, const char *file, int line, const char *
 	vfprintf(stderr, format, args);
 #endif
 	va_end(args);
+}
+
+int drv_resource_info(struct bo *bo, uint32_t strides[DRV_MAX_PLANES],
+		      uint32_t offsets[DRV_MAX_PLANES])
+{
+	for (uint32_t plane = 0; plane < bo->meta.num_planes; plane++) {
+		strides[plane] = bo->meta.strides[plane];
+		offsets[plane] = bo->meta.offsets[plane];
+	}
+
+	if (bo->drv->backend->resource_info)
+		return bo->drv->backend->resource_info(bo, strides, offsets);
+
+	return 0;
 }

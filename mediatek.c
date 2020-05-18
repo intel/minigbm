@@ -49,7 +49,7 @@ static int mediatek_init(struct driver *drv)
 	struct format_metadata metadata;
 
 	drv_add_combinations(drv, render_target_formats, ARRAY_SIZE(render_target_formats),
-			     &LINEAR_METADATA, BO_USE_RENDER_MASK);
+			     &LINEAR_METADATA, BO_USE_RENDER_MASK | BO_USE_SCANOUT);
 
 	drv_add_combinations(drv, texture_source_formats, ARRAY_SIZE(texture_source_formats),
 			     &LINEAR_METADATA, BO_USE_TEXTURE_MASK);
@@ -178,8 +178,8 @@ static void *mediatek_bo_map(struct bo *bo, struct vma *vma, size_t plane, uint3
 		return MAP_FAILED;
 	}
 
-	ret = drmPrimeHandleToFD(bo->drv->fd, gem_map.handle, DRM_CLOEXEC, &prime_fd);
-	if (ret) {
+	prime_fd = drv_bo_get_plane_fd(bo, 0);
+	if (prime_fd < 0) {
 		drv_log("Failed to get a prime fd\n");
 		return MAP_FAILED;
 	}
