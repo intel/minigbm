@@ -44,6 +44,10 @@ struct cros_gralloc_handle {
 	 * Name is a null terminated char array located at handle->base.data[handle->name_offset].
 	 */
 	uint32_t name_offset;
+#ifdef USE_GRALLOC1
+	uint32_t consumer_usage;
+	uint32_t producer_usage;
+#endif
 } __attribute__((packed));
 
 typedef const struct cros_gralloc_handle *cros_gralloc_handle_t;

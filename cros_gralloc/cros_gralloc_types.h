@@ -18,6 +18,10 @@ struct cros_gralloc_buffer_descriptor {
 	uint64_t use_flags;
 	uint64_t reserved_region_size;
 	std::string name;
+#ifdef USE_GRALLOC1
+	uint32_t consumer_usage;
+	uint32_t producer_usage;
+#endif
 };
 
 #endif

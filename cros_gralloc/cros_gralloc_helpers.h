@@ -24,4 +24,8 @@ cros_gralloc_handle_t cros_gralloc_convert_handle(buffer_handle_t handle);
 
 int32_t cros_gralloc_sync_wait(int32_t fence, bool close_fence);
 
+#ifdef USE_GRALLOC1
+int32_t cros_gralloc_sync_wait(int32_t acquire_fence);
+#endif
+
 #endif

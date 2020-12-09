@@ -35,6 +35,9 @@ cc_defaults {
         "-Wcast-qual",
         "-Wcast-align",
         "-Wno-unused-parameter",
+        "-Wno-switch",
+        "-Wno-format",
+        "-Wno-unused-variable",
     ],
     cppflags: ["-std=c++14"],
 
@@ -71,6 +74,10 @@ cc_defaults {
     name: "minigbm_cros_gralloc_defaults_celadon",
 
     defaults: ["minigbm_defaults_celadon"],
+
+    local_include_dirs: [
+        "cros_gralloc",
+    ],
 
     srcs: [
         "cros_gralloc/cros_gralloc_buffer.cc",
@@ -136,9 +143,12 @@ cc_library_shared {
             enabled: true,
         },
     },
-    cflags: ["-DDRV_I915"],
+    cflags: [
+        "-DDRV_I915",
+        "-DUSE_GRALLOC1",
+    ],
     relative_install_path: "hw",
-    srcs: ["cros_gralloc/gralloc0/gralloc0.cc"],
+    srcs: ["cros_gralloc/gralloc1/cros_gralloc1_module.cc"],
 }
 
 cc_library_shared {
@@ -152,9 +162,12 @@ cc_library_shared {
             enabled: true,
         },
     },
-    cflags: ["-DDRV_I915"],
+    cflags: [
+        "-DDRV_I915",
+        "-DUSE_GRALLOC1",
+    ],
     relative_install_path: "hw",
-    srcs: ["cros_gralloc/gralloc0/gralloc0.cc"],
+    srcs: ["cros_gralloc/gralloc1/cros_gralloc1_module.cc"],
 }
 
 cc_library_shared {

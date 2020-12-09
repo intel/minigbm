@@ -98,6 +98,54 @@ int32_t cros_gralloc_buffer::lock(const struct rectangle *rect, uint32_t map_fla
 	return 0;
 }
 
+#ifdef USE_GRALLOC1
+int32_t cros_gralloc_buffer::lock(uint32_t map_flags, uint8_t *addr[DRV_MAX_PLANES])
+{
+        void *vaddr = nullptr;
+
+        memset(addr, 0, DRV_MAX_PLANES * sizeof(*addr));
+
+        /*
+         * Gralloc consumers don't support more than one kernel buffer per buffer object yet, so
+         * just use the first kernel buffer.
+         */
+        if (drv_num_buffers_per_bo(bo_) != 1) {
+                drv_log("Can only support one buffer per bo.");
+                return -EINVAL;
+        }
+
+        if (map_flags) {
+                if (lock_data_[0]) {
+                        drv_bo_invalidate(bo_, lock_data_[0]);
+			vaddr = lock_data_[0]->vma->addr;
+                } else {
+                        struct rectangle r;
+
+                        if (!r.width && !r.height && !r.x && !r.y) {
+                                /*
+                                 * Android IMapper.hal: An accessRegion of all-zeros means the
+                                 * entire buffer.
+                                 */
+                                r.width = drv_bo_get_width(bo_);
+                                r.height = drv_bo_get_height(bo_);
+                        }
+                        vaddr = drv_bo_map(bo_, &r, map_flags, &lock_data_[0], 0);
+                }
+
+                if (vaddr == MAP_FAILED) {
+                        drv_log("Mapping failed.");
+                        return -EFAULT;
+                }
+        }
+
+        for (uint32_t plane = 0; plane < num_planes_; plane++)
+                addr[plane] = static_cast<uint8_t *>(vaddr) + drv_bo_get_plane_offset(bo_, plane);
+
+        lockcount_++;
+        return 0;
+}
+#endif
+
 int32_t cros_gralloc_buffer::unlock()
 {
 	if (lockcount_ <= 0) {
