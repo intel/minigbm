@@ -2,7 +2,7 @@
 // found in the LICENSE file.
 
 cc_defaults {
-    name: "minigbm_defaults",
+    name: "minigbm_defaults_celadon",
 
     srcs: [
         "amdgpu.c",
@@ -68,9 +68,9 @@ cc_defaults {
 }
 
 cc_defaults {
-    name: "minigbm_cros_gralloc_defaults",
+    name: "minigbm_cros_gralloc_defaults_celadon",
 
-    defaults: ["minigbm_defaults"],
+    defaults: ["minigbm_defaults_celadon"],
 
     srcs: [
         "cros_gralloc/cros_gralloc_buffer.cc",
@@ -80,8 +80,8 @@ cc_defaults {
 }
 
 cc_library_static {
-    name: "libminigbm",
-    defaults: ["minigbm_defaults"],
+    name: "libminigbm_celadon",
+    defaults: ["minigbm_defaults_celadon"],
     shared_libs: ["liblog"],
     static_libs: ["libdrm"],
 
@@ -94,8 +94,8 @@ cc_library_static {
 }
 
 cc_library_static {
-    name: "libminigbm_cros_gralloc",
-    defaults: ["minigbm_cros_gralloc_defaults"],
+    name: "libminigbm_cros_gralloc_celadon",
+    defaults: ["minigbm_cros_gralloc_defaults_celadon"],
     shared_libs: ["liblog"],
     static_libs: ["libdrm"],
 
@@ -103,14 +103,15 @@ cc_library_static {
 }
 
 cc_library_shared {
-    name: "gralloc.minigbm",
-    defaults: ["minigbm_cros_gralloc_defaults"],
+    name: "gralloc.minigbm_celadon",
+    defaults: ["minigbm_cros_gralloc_defaults_celadon"],
+    enabled: false,
     srcs: ["cros_gralloc/gralloc0/gralloc0.cc"],
 }
 
 cc_library_shared {
-    name: "gralloc.minigbm_intel",
-    defaults: ["minigbm_cros_gralloc_defaults"],
+    name: "gralloc.minigbm_intel_celadon",
+    defaults: ["minigbm_cros_gralloc_defaults_celadon"],
     enabled: false,
     arch: {
         x86: {
@@ -125,8 +126,40 @@ cc_library_shared {
 }
 
 cc_library_shared {
-    name: "gralloc.minigbm_meson",
-    defaults: ["minigbm_cros_gralloc_defaults"],
+    name: "gralloc.intel",
+    defaults: ["minigbm_cros_gralloc_defaults_celadon"],
+    arch: {
+        x86: {
+            enabled: true,
+        },
+        x86_64: {
+            enabled: true,
+        },
+    },
+    cflags: ["-DDRV_I915"],
+    relative_install_path: "hw",
+    srcs: ["cros_gralloc/gralloc0/gralloc0.cc"],
+}
+
+cc_library_shared {
+    name: "gralloc.celadon",
+    defaults: ["minigbm_cros_gralloc_defaults_celadon"],
+    arch: {
+        x86: {
+            enabled: true,
+        },
+        x86_64: {
+            enabled: true,
+        },
+    },
+    cflags: ["-DDRV_I915"],
+    relative_install_path: "hw",
+    srcs: ["cros_gralloc/gralloc0/gralloc0.cc"],
+}
+
+cc_library_shared {
+    name: "gralloc.minigbm_meson_celadon",
+    defaults: ["minigbm_cros_gralloc_defaults_celadon"],
     cflags: ["-DDRV_MESON"],
     srcs: ["cros_gralloc/gralloc0/gralloc0.cc"],
 }

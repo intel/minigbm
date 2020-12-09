@@ -39,7 +39,7 @@ cc_binary {
 
     static_libs: [
         "libdrm",
-        "libminigbm_cros_gralloc",
+        "libminigbm_cros_gralloc_celadon",
     ],
 
     srcs: [
@@ -72,7 +72,7 @@ cc_library_shared {
 
     static_libs: [
         "libdrm",
-        "libminigbm_cros_gralloc",
+        "libminigbm_cros_gralloc_celadon",
     ],
 
     srcs: [
