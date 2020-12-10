@@ -476,6 +476,14 @@ int32_t CrosGralloc1::lockYCbCr(buffer_handle_t bufferHandle,
 		ycbcr->cstride = hnd->strides[1];
 		ycbcr->chroma_step = 1;
 		break;
+	case DRM_FORMAT_P010:
+		ycbcr->y = addr[0];
+		ycbcr->cb = addr[1];
+		ycbcr->cr = addr[1] + 2;
+		ycbcr->ystride = hnd->strides[0];
+		ycbcr->cstride = hnd->strides[1];
+		ycbcr->chroma_step = 4;
+		break;
 	default:
 		return CROS_GRALLOC_ERROR_UNSUPPORTED;
 	}
