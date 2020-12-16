@@ -236,6 +236,7 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 #ifdef USE_GRALLOC1
 	hnd->producer_usage = descriptor->producer_usage;
 	hnd->consumer_usage = descriptor->consumer_usage;
+	hnd->tiling_mode = drv_bo_get_stride_or_tiling(bo);
 	int32_t format = i915_private_invert_format(hnd->format);
 	if (format == 0) {
 		format =  descriptor->droid_format;

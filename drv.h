@@ -184,6 +184,10 @@ uint32_t drv_num_buffers_per_bo(struct bo *bo);
 int drv_resource_info(struct bo *bo, uint32_t strides[DRV_MAX_PLANES],
 		      uint32_t offsets[DRV_MAX_PLANES]);
 
+#ifdef USE_GRALLOC1
+uint32_t drv_bo_get_stride_or_tiling(struct bo *bo);
+#endif
+
 #define drv_log(format, ...)                                                                       \
 	do {                                                                                       \
 		drv_log_prefix("minigbm", __FILE__, __LINE__, format, ##__VA_ARGS__);              \

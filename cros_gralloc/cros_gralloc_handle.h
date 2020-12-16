@@ -57,6 +57,7 @@ struct cros_gralloc_handle {
 	uint32_t compression_mode;
 	uint32_t compression_hint;
 	uint32_t codec;
+	uint32_t tiling_mode;
 #endif
 } __attribute__((packed));
 

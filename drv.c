@@ -729,3 +729,10 @@ int drv_resource_info(struct bo *bo, uint32_t strides[DRV_MAX_PLANES],
 
 	return 0;
 }
+
+#ifdef USE_GRALLOC1
+uint32_t drv_bo_get_stride_or_tiling(struct bo *bo)
+{
+       return bo->meta.tiling ? bo->meta.tiling : drv_bo_get_plane_stride(bo, 0);
+}
+#endif
