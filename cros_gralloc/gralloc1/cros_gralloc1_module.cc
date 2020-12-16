@@ -225,6 +225,12 @@ gralloc1_function_pointer_t CrosGralloc1::doGetFunction(int32_t intDescriptor)
 		return asFP<GRALLOC1_PFN_SET_INTERLACE>(setInterlaceHook);
 	case GRALLOC1_FUNCTION_SET_PROTECTIONINFO:
 		return asFP<GRALLOC1_PFN_SET_PROTECTIONINFO>(setProtectionInfoHook);
+	case GRALLOC1_FUNCTION_VALIDATE_BUFFER_SIZE:
+		return asFP<GRALLOC1_PFN_VALIDATE_BUFFER_SIZE>(validateBufferSizeHook);
+	case GRALLOC1_FUNCTION_GET_TRANSPORT_SIZE:
+		return asFP<GRALLOC1_PFN_GET_TRANSPORT_SIZE>(getTransportSizeHook);
+	case GRALLOC1_FUNCTION_IMPORT_BUFFER:
+		return asFP<GRALLOC1_PFN_IMPORT_BUFFER>(importBufferHook);
 	case GRALLOC1_FUNCTION_INVALID:
 		drv_log("Invalid function descriptor");
 		return nullptr;
@@ -306,12 +312,71 @@ int32_t CrosGralloc1::setInterlace(buffer_handle_t buffer, uint32_t interlace)
 
 int32_t CrosGralloc1::setProtectionInfo(buffer_handle_t buffer, uint32_t protection_info)
 {
-        auto hnd = (cros_gralloc_handle*) cros_gralloc_convert_handle(buffer);
-        if (!hnd) {
-                return CROS_GRALLOC_ERROR_BAD_HANDLE;
-        }
-        hnd->is_encrypted = protection_info;
-        return CROS_GRALLOC_ERROR_NONE;
+	auto hnd = (cros_gralloc_handle *)cros_gralloc_convert_handle(buffer);
+	if (!hnd) {
+		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+	}
+	hnd->is_encrypted = protection_info;
+	return CROS_GRALLOC_ERROR_NONE;
+}
+
+int32_t CrosGralloc1::validateBufferSize(buffer_handle_t buffer,
+					 const gralloc1_buffer_descriptor_info_t *descriptorInfo,
+					 uint32_t stride)
+{
+	auto hnd = (cros_gralloc_handle *)cros_gralloc_convert_handle(buffer);
+	if (!hnd) {
+		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+	}
+
+	if (cros_gralloc_convert_format(descriptorInfo->format) != hnd->format) {
+		return CROS_GRALLOC_ERROR_BAD_VALUE;
+	}
+
+	// Do not support GRALLOC1_CAPABILITY_LAYERED_BUFFERS, only allocate buffers with a
+	// single layer.
+	if (descriptorInfo->layerCount != 1) {
+		return CROS_GRALLOC_ERROR_BAD_VALUE;
+	}
+	if (stride > hnd->pixel_stride || descriptorInfo->width > hnd->width ||
+	    descriptorInfo->height > hnd->height) {
+		return CROS_GRALLOC_ERROR_BAD_VALUE;
+	}
+	return CROS_GRALLOC_ERROR_NONE;
+}
+
+int32_t CrosGralloc1::getTransportSize(buffer_handle_t buffer, uint32_t *outNumFds,
+				       uint32_t *outNumInts)
+{
+	auto hnd = (cros_gralloc_handle *)cros_gralloc_convert_handle(buffer);
+	if (!hnd) {
+		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+	}
+	*outNumFds = hnd->base.numFds;
+	*outNumInts = hnd->base.numInts;
+	return CROS_GRALLOC_ERROR_NONE;
+}
+
+int32_t CrosGralloc1::importBuffer(const buffer_handle_t rawHandle, buffer_handle_t *outBuffer)
+{
+	if (!rawHandle) {
+		*outBuffer = NULL;
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
+	buffer_handle_t buffer_handle = native_handle_clone(rawHandle);
+	if (!buffer_handle) {
+		*outBuffer = NULL;
+		return GRALLOC1_ERROR_NO_RESOURCES;
+	}
+	auto error = retain(buffer_handle);
+	if (error != GRALLOC1_ERROR_NONE) {
+		delete buffer_handle;
+		*outBuffer = NULL;
+		return error;
+	}
+
+	*outBuffer = buffer_handle;
+	return GRALLOC1_ERROR_NONE;
 }
 
 int32_t CrosGralloc1::allocate(struct cros_gralloc_buffer_descriptor *descriptor,
