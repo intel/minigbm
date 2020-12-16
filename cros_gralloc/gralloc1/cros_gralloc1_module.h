@@ -198,6 +198,13 @@ class CrosGralloc1 : public gralloc1_device_t
 		return getAdapter(device)->getByteStride(buffer, outStride, size);
 	}
 
+	int32_t getPrime(buffer_handle_t buffer, uint32_t *prime);
+	static int32_t getPrimeHook(gralloc1_device_t *device, buffer_handle_t buffer,
+				     uint32_t *prime)
+	{
+		return getAdapter(device)->getPrime(buffer, prime);
+	}
+
 	// Buffer Management functions
 	int32_t allocate(struct cros_gralloc_buffer_descriptor *descriptor,
 			 buffer_handle_t *outBufferHandle);

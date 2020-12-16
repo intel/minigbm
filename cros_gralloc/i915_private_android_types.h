@@ -61,6 +61,7 @@ enum { HAL_PIXEL_FORMAT_NV12_Y_TILED_INTEL = 0x100,
 
 enum { GRALLOC1_FUNCTION_SET_MODIFIER = 101,
        GRALLOC1_FUNCTION_GET_BYTE_STRIDE = 102,
+       GRALLOC1_FUNCTION_GET_PRIME = 103,
        GRALLOC1_LAST_CUSTOM = 500 };
 
 typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_SET_MODIFIER)(
@@ -68,5 +69,8 @@ typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_SET_MODIFIER)(
 
 typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_GET_BYTE_STRIDE)(
     gralloc1_device_t *device, buffer_handle_t buffer, uint32_t *outStride, uint32_t size);
+
+typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_GET_PRIME)(
+    gralloc1_device_t *device, buffer_handle_t buffer, uint32_t *prime);
 
 #endif
