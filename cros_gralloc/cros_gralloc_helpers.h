@@ -27,6 +27,7 @@ int32_t cros_gralloc_sync_wait(int32_t fence, bool close_fence);
 #ifdef USE_GRALLOC1
 int32_t cros_gralloc_sync_wait(int32_t acquire_fence);
 const char *drmFormat2Str(int format);
+bool is_flex_format(uint32_t format);
 #endif
 
 #endif
