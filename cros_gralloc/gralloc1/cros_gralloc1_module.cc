@@ -405,7 +405,7 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 	return CROS_GRALLOC_ERROR_NONE;
 }
 
-android_flex_plane_t ycbcrplanes[3];
+thread_local android_flex_plane_t ycbcrplanes[3];
 
 int32_t update_flex_layout(struct android_ycbcr *ycbcr, struct android_flex_layout *outFlexLayout)
 {
