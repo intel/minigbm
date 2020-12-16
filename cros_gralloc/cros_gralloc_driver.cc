@@ -120,6 +120,9 @@ int32_t create_reserved_region(const std::string &buffer_name, uint64_t reserved
 int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descriptor *descriptor,
 				      buffer_handle_t *out_handle)
 {
+#ifdef USE_GRALLOC1
+	uint64_t mod;
+#endif
 	uint32_t id;
 	size_t num_planes;
 	size_t num_fds;
@@ -218,6 +221,11 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 		hnd->strides[plane] = drv_bo_get_plane_stride(bo, plane);
 		hnd->offsets[plane] = drv_bo_get_plane_offset(bo, plane);
 		hnd->sizes[plane] = drv_bo_get_plane_size(bo, plane);
+#ifdef USE_GRALLOC1
+		mod = drv_bo_get_plane_format_modifier(bo, plane);
+		hnd->format_modifiers[2 * plane] = static_cast<uint32_t>(mod >> 32);
+		hnd->format_modifiers[2 * plane + 1] = static_cast<uint32_t>(mod);
+#endif
 	}
 	hnd->fds[hnd->num_planes] = reserved_region_fd;
 	hnd->reserved_region_size = descriptor->reserved_region_size;
