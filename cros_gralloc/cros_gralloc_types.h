@@ -21,6 +21,7 @@ struct cros_gralloc_buffer_descriptor {
 #ifdef USE_GRALLOC1
 	uint32_t consumer_usage;
 	uint32_t producer_usage;
+	uint64_t modifier;
 #endif
 };
 

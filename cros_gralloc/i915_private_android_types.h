@@ -9,6 +9,9 @@
  * Android graphics.h defines the formats and leaves 0x100 - 0x1FF
  * range available for HAL implementation specific formats.
  */
+
+#include <hardware/gralloc1.h>
+
 enum { HAL_PIXEL_FORMAT_NV12_Y_TILED_INTEL = 0x100,
        HAL_PIXEL_FORMAT_NV12_LINEAR_INTEL = 0x101,
        HAL_PIXEL_FORMAT_YCrCb_422_H_INTEL = 0x102,
@@ -55,5 +58,11 @@ enum { HAL_PIXEL_FORMAT_NV12_Y_TILED_INTEL = 0x100,
        HAL_PIXEL_FORMAT_YUV420PackedSemiPlanar_INTEL = 0x7FA00E00,
        HAL_PIXEL_FORMAT_YUV420PackedSemiPlanar_Tiled_INTEL = 0x7FA00F00,
 };
+
+enum { GRALLOC1_FUNCTION_SET_MODIFIER = 101,
+       GRALLOC1_LAST_CUSTOM = 500 };
+
+typedef int32_t /*gralloc1_error_t*/ (*GRALLOC1_PFN_SET_MODIFIER)(
+    gralloc1_device_t *device, gralloc1_buffer_descriptor_t descriptor, uint64_t modifier);
 
 #endif

@@ -154,7 +154,17 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 		use_flags &= ~BO_USE_HW_VIDEO_ENCODER;
 	}
 
+#ifdef USE_GRALLOC1
+	if (descriptor->modifier == 0) {
+		bo = drv_bo_create(drv_, descriptor->width, descriptor->height, resolved_format,
+				   use_flags);
+	} else {
+		bo = drv_bo_create_with_modifiers(drv_, descriptor->width, descriptor->height,
+						  resolved_format, &descriptor->modifier, 1);
+	}
+#else
 	bo = drv_bo_create(drv_, descriptor->width, descriptor->height, resolved_format, use_flags);
+#endif
 	if (!bo) {
 		drv_log("Failed to create bo.\n");
 		return -ENOMEM;
