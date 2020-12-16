@@ -20,6 +20,10 @@
 #include "helpers.h"
 #include "util.h"
 
+#ifdef USE_GRALLOC1
+#include "i915_private.h"
+#endif
+
 #define I915_CACHELINE_SIZE 64
 #define I915_CACHELINE_MASK (I915_CACHELINE_SIZE - 1)
 
@@ -37,6 +41,10 @@ static const uint32_t texture_only_formats[] = { DRM_FORMAT_R8, DRM_FORMAT_NV12,
 struct i915_device {
 	uint32_t gen;
 	int32_t has_llc;
+#ifdef USE_GRALLOC1
+	uint64_t cursor_width;
+	uint64_t cursor_height;
+#endif
 };
 
 static uint32_t i915_get_gen(int device_id)
@@ -133,6 +141,9 @@ static int i915_add_combinations(struct driver *drv)
 	drv_add_combinations(drv, render_formats, ARRAY_SIZE(render_formats), &metadata, render);
 	drv_add_combinations(drv, scanout_render_formats, ARRAY_SIZE(scanout_render_formats),
 			     &metadata, scanout_and_render);
+#ifdef USE_GRALLOC1
+	i915_private_add_combinations(drv);
+#endif
 	return 0;
 }
 
@@ -172,6 +183,10 @@ static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *strid
 		}
 		break;
 	}
+
+#ifdef USE_GRALLOC1
+	i915_private_align_dimensions(bo->meta.format, &vertical_alignment);
+#endif
 
 	*aligned_height = ALIGN(*aligned_height, vertical_alignment);
 	if (i915->gen > 3) {
@@ -235,6 +250,10 @@ static int i915_init(struct driver *drv)
 	}
 
 	drv->priv = i915;
+
+#ifdef USE_GRALLOC1
+	i915_private_init(drv, &i915->cursor_width, &i915->cursor_height);
+#endif
 
 	return i915_add_combinations(drv);
 }
@@ -528,6 +547,12 @@ static int i915_bo_flush(struct bo *bo, struct mapping *mapping)
 
 static uint32_t i915_resolve_format(struct driver *drv, uint32_t format, uint64_t use_flags)
 {
+#ifdef USE_GRALLOC1
+	uint32_t resolved_format;
+	if (i915_private_resolve_format(format, use_flags, &resolved_format)) {
+		return resolved_format;
+	}
+#endif
 	switch (format) {
 	case DRM_FORMAT_FLEX_IMPLEMENTATION_DEFINED:
 		/* KBL camera subsystem requires NV12. */

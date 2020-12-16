@@ -8,6 +8,18 @@
 
 #include <sync/sync.h>
 
+#ifdef USE_GRALLOC1
+#include "i915_private_android.h"
+const char* drmFormat2Str(int drm_format)
+{
+    static char buf[5];
+    char *pDrmFormat = (char*) &drm_format;
+    snprintf(buf, sizeof(buf), "%c%c%c%c", *pDrmFormat, *(pDrmFormat + 1),
+             *(pDrmFormat + 2), *(pDrmFormat + 3));
+    return buf;
+}
+#endif
+
 uint32_t cros_gralloc_convert_format(int format)
 {
 	/*
@@ -49,7 +61,11 @@ uint32_t cros_gralloc_convert_format(int format)
 #endif
 	}
 
+#ifdef USE_GRALLOC1
+return i915_private_convert_format(format);
+#else
 	return DRM_FORMAT_NONE;
+#endif
 }
 
 cros_gralloc_handle_t cros_gralloc_convert_handle(buffer_handle_t handle)

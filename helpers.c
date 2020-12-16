@@ -18,6 +18,10 @@
 #include "helpers.h"
 #include "util.h"
 
+#ifdef USE_GRALLOC1
+#include "i915_private.h"
+#endif
+
 struct planar_layout {
 	size_t num_planes;
 	int horizontal_subsampling[DRV_MAX_PLANES];
@@ -178,7 +182,11 @@ size_t drv_num_planes_from_format(uint32_t format)
 	 * format is supported and that the return value is non-NULL.
 	 */
 
+#ifdef USE_GRALLOC1
+	return layout ? layout->num_planes : i915_private_num_planes_from_format(format);
+#else
 	return layout ? layout->num_planes : 0;
+#endif
 }
 
 size_t drv_num_planes_from_modifier(struct driver *drv, uint32_t format, uint64_t modifier)

@@ -24,6 +24,7 @@ cc_defaults {
         "vc4.c",
         "vgem.c",
         "virtio_gpu.c",
+        "i915_private.c",
     ],
 
     cflags: [
@@ -38,6 +39,8 @@ cc_defaults {
         "-Wno-switch",
         "-Wno-format",
         "-Wno-unused-variable",
+        "-DDRV_I915",
+        "-DUSE_GRALLOC1",
     ],
     cppflags: ["-std=c++14"],
 
@@ -79,10 +82,16 @@ cc_defaults {
         "cros_gralloc",
     ],
 
+    cflags: [
+        "-DDRV_I915",
+        "-DUSE_GRALLOC1",
+    ],
+
     srcs: [
         "cros_gralloc/cros_gralloc_buffer.cc",
         "cros_gralloc/cros_gralloc_helpers.cc",
         "cros_gralloc/cros_gralloc_driver.cc",
+        "cros_gralloc/i915_private_android.cc",
     ]
 }
 

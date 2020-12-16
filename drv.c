@@ -25,6 +25,10 @@
 #include "helpers.h"
 #include "util.h"
 
+#ifdef USE_GRALLOC1
+#include "i915_private.h"
+#endif
+
 #ifdef DRV_AMDGPU
 extern const struct backend backend_amdgpu;
 #endif

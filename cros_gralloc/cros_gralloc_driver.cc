@@ -15,6 +15,10 @@
 #include "../helpers.h"
 #include "../util.h"
 
+#ifdef USE_GRALLOC1
+#include "i915_private_android.h"
+#endif
+
 cros_gralloc_driver::cros_gralloc_driver() : drv_(nullptr)
 {
 }
@@ -222,6 +226,13 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 #ifdef USE_GRALLOC1
 	hnd->producer_usage = descriptor->producer_usage;
 	hnd->consumer_usage = descriptor->consumer_usage;
+	int32_t format = i915_private_invert_format(hnd->format);
+	if (format == 0) {
+		format =  descriptor->droid_format;
+	}
+	hnd->droid_format = format;
+#else
+	hnd->droid_format = descriptor->droid_format;
 #endif
 	hnd->total_size = descriptor->reserved_region_size + bo->meta.total_size;
 	hnd->name_offset = handle_data_size;

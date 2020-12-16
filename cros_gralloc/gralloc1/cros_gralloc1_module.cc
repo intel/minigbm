@@ -23,13 +23,17 @@
 
 #include <inttypes.h>
 
+#include "i915_private_android.h"
+
+#include "i915_private_android_types.h"
+
 template <typename PFN, typename T> static gralloc1_function_pointer_t asFP(T function)
 {
 	static_assert(std::is_same<PFN, T>::value, "Incompatible function pointer");
 	return reinterpret_cast<gralloc1_function_pointer_t>(function);
 }
 
-uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_flags)
+uint64_t cros_gralloc1_convert_usage(uint64_t producer_flags, uint64_t consumer_flags)
 {
 	uint64_t usage = BO_USE_NONE;
 
@@ -53,7 +57,7 @@ uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_
 		usage |= BO_USE_CAMERA_READ;
 	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_RENDERSCRIPT)
 		/* We use CPU for compute. */
-		usage |= BO_USE_LINEAR;
+		usage |= BO_USE_RENDERSCRIPT;
 
 	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_READ)
 		usage |= BO_USE_SW_READ_RARELY;
@@ -74,6 +78,44 @@ uint64_t cros_gralloc1_convert_flags(uint64_t producer_flags, uint64_t consumer_
 		usage |= BO_USE_CAMERA_WRITE;
 
 	return usage;
+}
+
+uint64_t cros_gralloc1_convert_map_usage(uint64_t producer_flags, uint64_t consumer_flags)
+{
+	uint64_t usage = BO_USE_NONE;
+
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_CPU_READ)
+		usage |= BO_MAP_READ;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_CPU_READ_OFTEN)
+		usage |= BO_MAP_READ;
+	if (consumer_flags & GRALLOC1_CONSUMER_USAGE_VIDEO_ENCODER)
+		/*HACK: See b/30054495 */
+		usage |= BO_MAP_READ;
+
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_READ)
+		usage |= BO_MAP_READ;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_READ_OFTEN)
+		usage |= BO_MAP_READ;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_WRITE)
+		usage |= BO_MAP_WRITE;
+	if (producer_flags & GRALLOC1_PRODUCER_USAGE_CPU_WRITE_OFTEN)
+		usage |= BO_MAP_WRITE;
+
+	return usage;
+}
+
+bool IsSupportedYUVFormat(uint32_t droid_format)
+{
+	switch (droid_format) {
+	case HAL_PIXEL_FORMAT_YCbCr_420_888:
+	case HAL_PIXEL_FORMAT_YV12:
+	case HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED:
+		return true;
+	default:
+		return i915_private_supported_yuv_format(droid_format);
+	}
+
+	return false;
 }
 
 namespace android
@@ -242,7 +284,7 @@ int32_t CrosGralloc1::allocate(struct cros_gralloc_buffer_descriptor *descriptor
 	// pointer, which only occurs when mDevice has been loaded successfully and
 	// we are permitted to allocate
 	uint64_t usage =
-	    cros_gralloc1_convert_flags(descriptor->producer_usage, descriptor->consumer_usage);
+	    cros_gralloc1_convert_usage(descriptor->producer_usage, descriptor->consumer_usage);
 	descriptor->use_flags = usage;
 	bool supported = driver->is_supported(descriptor);
 	if (!supported && (descriptor->consumer_usage & GRALLOC1_CONSUMER_USAGE_HWCOMPOSER)) {
@@ -307,8 +349,7 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 			   const gralloc1_rect_t &accessRegion, void **outData,
 			   int32_t acquireFence)
 {
-	int32_t ret;
-	uint64_t flags;
+	uint64_t map_flags;
 	uint8_t *addr[DRV_MAX_PLANES];
 
 	auto hnd = cros_gralloc_convert_handle(bufferHandle);
@@ -322,9 +363,9 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	flags = cros_gralloc1_convert_flags(producerUsage, consumerUsage);
+	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
 
-	if (driver->lock(bufferHandle, acquireFence, flags, addr))
+	if (driver->lock(bufferHandle, acquireFence, map_flags, addr))
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 
 	*outData = addr[0];
@@ -336,19 +377,29 @@ android_flex_plane_t ycbcrplanes[3];
 
 int32_t update_flex_layout(struct android_ycbcr *ycbcr, struct android_flex_layout *outFlexLayout)
 {
-	/*Need to add generic support*/
-	ycbcrplanes[0].component = FLEX_COMPONENT_Y;
-	ycbcrplanes[0].top_left = (uint8_t *)ycbcr->y;
-	ycbcrplanes[0].h_increment = ycbcr->ystride;
-	ycbcrplanes[1].component = FLEX_COMPONENT_Cb;
-	ycbcrplanes[1].top_left = (uint8_t *)ycbcr->cb;
-	ycbcrplanes[1].h_increment = ycbcr->cstride;
-	ycbcrplanes[2].component = FLEX_COMPONENT_Cr;
-	ycbcrplanes[2].top_left = (uint8_t *)ycbcr->cr;
-	ycbcrplanes[2].h_increment = ycbcr->chroma_step;
 	outFlexLayout->format = FLEX_FORMAT_YCbCr;
-	outFlexLayout->planes = ycbcrplanes;
 	outFlexLayout->num_planes = 3;
+	for (uint32_t i = 0; i < outFlexLayout->num_planes; i++) {
+		ycbcrplanes[i].bits_per_component = 8;
+		ycbcrplanes[i].bits_used = 8;
+	}
+
+	ycbcrplanes[0].top_left = static_cast<uint8_t *>(ycbcr->y);
+	ycbcrplanes[0].component = FLEX_COMPONENT_Y;
+	ycbcrplanes[0].h_increment = 1;
+	ycbcrplanes[0].v_increment = static_cast<int32_t>(ycbcr->ystride);
+
+	ycbcrplanes[1].top_left = static_cast<uint8_t *>(ycbcr->cb);
+	ycbcrplanes[1].component = FLEX_COMPONENT_Cb;
+	ycbcrplanes[1].h_increment = static_cast<int32_t>(ycbcr->chroma_step);
+	ycbcrplanes[1].v_increment = static_cast<int32_t>(ycbcr->cstride);
+
+	ycbcrplanes[2].top_left = static_cast<uint8_t *>(ycbcr->cr);
+	ycbcrplanes[2].component = FLEX_COMPONENT_Cr;
+	ycbcrplanes[2].h_increment = static_cast<int32_t>(ycbcr->chroma_step);
+	ycbcrplanes[2].v_increment = static_cast<int32_t>(ycbcr->cstride);
+
+	outFlexLayout->planes = ycbcrplanes;
 	return 0;
 }
 
@@ -368,8 +419,7 @@ int32_t CrosGralloc1::lockFlex(buffer_handle_t bufferHandle,
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
+	if (!IsSupportedYUVFormat(hnd->droid_format)) {
 		drv_log("lockFlex: Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
@@ -389,8 +439,7 @@ int32_t CrosGralloc1::lockYCbCr(buffer_handle_t bufferHandle,
 				const gralloc1_rect_t &accessRegion, struct android_ycbcr *ycbcr,
 				int32_t acquireFence)
 {
-	uint64_t flags;
-	int32_t ret;
+	uint64_t map_flags;
 	uint8_t *addr[DRV_MAX_PLANES] = { nullptr, nullptr, nullptr, nullptr };
 
 	auto hnd = cros_gralloc_convert_handle(bufferHandle);
@@ -399,18 +448,18 @@ int32_t CrosGralloc1::lockYCbCr(buffer_handle_t bufferHandle,
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	if ((hnd->droid_format != HAL_PIXEL_FORMAT_YCbCr_420_888) &&
-	    (hnd->droid_format != HAL_PIXEL_FORMAT_YV12)) {
+	if (!IsSupportedYUVFormat(hnd->droid_format)) {
 		drv_log("Non-YUV format not compatible.");
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 	}
 
-	flags = cros_gralloc1_convert_flags(producerUsage, consumerUsage);
-	if (driver->lock(bufferHandle, acquireFence, flags, addr))
+	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
+	if (driver->lock(bufferHandle, acquireFence, map_flags, addr))
 		return CROS_GRALLOC_ERROR_BAD_HANDLE;
 
 	switch (hnd->format) {
 	case DRM_FORMAT_NV12:
+	case DRM_FORMAT_NV12_Y_TILED_INTEL:
 		ycbcr->y = addr[0];
 		ycbcr->cb = addr[1];
 		ycbcr->cr = addr[1] + 1;
