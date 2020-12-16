@@ -317,6 +317,10 @@ static int i915_bo_compute_metadata(struct bo *bo, uint32_t width, uint32_t heig
 		break;
 	case I915_FORMAT_MOD_Y_TILED:
 	case I915_FORMAT_MOD_Y_TILED_CCS:
+#ifdef USE_GRALLOC1
+	case I915_FORMAT_MOD_Yf_TILED:
+	case I915_FORMAT_MOD_Yf_TILED_CCS:
+#endif
 		bo->meta.tiling = I915_TILING_Y;
 		break;
 	}
