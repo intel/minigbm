@@ -145,8 +145,13 @@ Return<Error> CrosGralloc4Mapper::validateBufferSize(void* rawHandle,
     }
 
     PixelFormat crosHandleFormat = static_cast<PixelFormat>(crosHandle->droid_format);
-    if (descriptor.format != crosHandleFormat) {
+#ifdef USE_GRALLOC1
+    int32_t yuvFormat = static_cast<int32_t>(descriptor.format);
+    if (descriptor.format != crosHandleFormat && yuvFormat != crosHandle->droid_format) {
         drv_log("Failed to validateBufferSize. Format mismatch.\n");
+#else
+    if (descriptor.format != crosHandleFormat) {
+#endif
         return Error::BAD_BUFFER;
     }
 

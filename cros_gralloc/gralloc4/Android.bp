@@ -23,6 +23,7 @@ cc_binary {
     cflags: [
         "-Wall",
         "-Werror",
+        "-DUSE_GRALLOC1",
     ],
 
     shared_libs: [
@@ -57,6 +58,7 @@ cc_library_shared {
     cflags: [
         "-Wall",
         "-Werror",
+        "-DUSE_GRALLOC1",
     ],
 
     shared_libs: [

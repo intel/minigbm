@@ -18,6 +18,10 @@
 
 #include "cros_gralloc/cros_gralloc_helpers.h"
 
+#ifdef USE_GRALLOC1
+#include "cros_gralloc/i915_private_android.h"
+#endif
+
 using aidl::android::hardware::graphics::common::PlaneLayout;
 using aidl::android::hardware::graphics::common::PlaneLayoutComponent;
 using aidl::android::hardware::graphics::common::PlaneLayoutComponentType;
@@ -415,6 +419,23 @@ int convertToBufferUsage(uint64_t grallocUsage, uint64_t* outBufferUsage) {
     return 0;
 }
 
+#ifdef USE_GRALLOC1
+bool IsSupportedYUVFormat(uint32_t droid_format) {
+
+    switch (droid_format) {
+        case HAL_PIXEL_FORMAT_YCbCr_420_888:
+        case HAL_PIXEL_FORMAT_YV12:
+        case HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED:
+            return true;
+        default:
+            return i915_private_supported_yuv_format(droid_format);
+    }
+
+    return false;
+}
+
+#endif
+
 int convertToCrosDescriptor(const BufferDescriptorInfo& descriptor,
                             struct cros_gralloc_buffer_descriptor* outCrosDescriptor) {
     outCrosDescriptor->name = descriptor.name;
@@ -425,9 +446,20 @@ int convertToCrosDescriptor(const BufferDescriptorInfo& descriptor,
     outCrosDescriptor->reserved_region_size = descriptor.reservedSize;
 
     if (convertToDrmFormat(descriptor.format, &outCrosDescriptor->drm_format)) {
+#ifdef USE_GRALLOC1
+        drv_log("Failed to convert descriptor by convertToDrmFormat");
+        if (!IsSupportedYUVFormat(static_cast<uint32_t>(descriptor.format))) {
+            std::string pixelFormatString = getPixelFormatString(descriptor.format);
+            drv_log("Failed to convert descriptor. Unsupported fomat %s\n", pixelFormatString.c_str());
+            return -1;
+        } else {
+            outCrosDescriptor->drm_format = cros_gralloc_convert_format(static_cast<int32_t>(descriptor.format));
+        }
+#else
         std::string pixelFormatString = getPixelFormatString(descriptor.format);
         drv_log("Failed to convert descriptor. Unsupported fomat %s\n", pixelFormatString.c_str());
         return -1;
+#endif
     }
     if (convertToBufferUsage(descriptor.usage, &outCrosDescriptor->use_flags)) {
         std::string usageString = getUsageString(descriptor.usage);
