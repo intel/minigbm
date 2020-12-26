@@ -184,10 +184,6 @@ static int i915_align_dimensions(struct bo *bo, uint32_t tiling, uint32_t *strid
 		break;
 	}
 
-#ifdef USE_GRALLOC1
-	i915_private_align_dimensions(bo->meta.format, &vertical_alignment);
-#endif
-
 	*aligned_height = ALIGN(*aligned_height, vertical_alignment);
 	if (i915->gen > 3) {
 		*stride = ALIGN(*stride, horizontal_alignment);

@@ -239,7 +239,6 @@ int32_t cros_gralloc_driver::allocate(const struct cros_gralloc_buffer_descripto
 	bytes_per_pixel = drv_bytes_per_pixel_from_format(hnd->format, 0);
 	hnd->pixel_stride = DIV_ROUND_UP(hnd->strides[0], bytes_per_pixel);
 	hnd->magic = cros_gralloc_magic;
-	hnd->droid_format = descriptor->droid_format;
 	hnd->usage = descriptor->droid_usage;
 #ifdef USE_GRALLOC1
 	hnd->producer_usage = descriptor->producer_usage;
