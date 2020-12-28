@@ -110,7 +110,8 @@ int i915_private_add_combinations(struct driver *drv)
         metadata.priority = 1;
         metadata.modifier = DRM_FORMAT_MOD_NONE;
         drv_add_combinations(drv, private_rgba_format, ARRAY_SIZE(private_rgba_format), &metadata,
-                             BO_USE_SW_WRITE_OFTEN | BO_USE_SCANOUT);
+                              BO_USE_SW_WRITE_RARELY | BO_USE_SW_WRITE_OFTEN |
+                              BO_USE_SW_READ_RARELY | BO_USE_SW_READ_OFTEN | BO_USE_SCANOUT);
 
 	metadata.tiling = I915_TILING_Y;
 	metadata.priority = 3;
