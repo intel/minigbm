@@ -502,8 +502,8 @@ Return<void> CrosGralloc4Mapper::get(cros_gralloc_handle_t crosHandle,
             planeLayout.offsetInBytes = crosHandle->offsets[plane];
             planeLayout.strideInBytes = crosHandle->strides[plane];
             planeLayout.totalSizeInBytes = crosHandle->sizes[plane];
-            planeLayout.widthInSamples = crosHandle->width;
-            planeLayout.heightInSamples = crosHandle->height;
+            planeLayout.widthInSamples = crosHandle->width / planeLayout.horizontalSubsampling;
+            planeLayout.heightInSamples = crosHandle->height / planeLayout.verticalSubsampling;
         }
 
         status = android::gralloc4::encodePlaneLayouts(planeLayouts, &encodedMetadata);
