@@ -36,7 +36,12 @@ static const uint32_t scanout_render_formats[] = { DRM_FORMAT_ABGR2101010, DRM_F
 static const uint32_t render_formats[] = { DRM_FORMAT_ABGR16161616F };
 
 static const uint32_t texture_only_formats[] = { DRM_FORMAT_R8, DRM_FORMAT_NV12, DRM_FORMAT_P010,
+#ifdef USE_GRALLOC1
+						 DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID,
+						 DRM_FORMAT_YUYV };
+#else
 						 DRM_FORMAT_YVU420, DRM_FORMAT_YVU420_ANDROID };
+#endif
 
 struct i915_device {
 	uint32_t gen;
@@ -335,7 +340,11 @@ static int i915_bo_compute_metadata(struct bo *bo, uint32_t width, uint32_t heig
 		 * ALIGN(Y_stride / 2, 16), which we can make happen by
 		 * aligning to 32 bytes here.
 		 */
+#ifdef USE_GRALLOC1
+		uint32_t stride = ALIGN(width, 64);
+#else
 		uint32_t stride = ALIGN(width, 32);
+#endif
 		drv_bo_from_format(bo, stride, height, format);
 	} else if (modifier == I915_FORMAT_MOD_Y_TILED_CCS) {
 		/*
