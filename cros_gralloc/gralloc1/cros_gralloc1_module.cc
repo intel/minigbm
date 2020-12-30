@@ -463,8 +463,18 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 
 	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
 
-	if (driver->lock(bufferHandle, acquireFence, map_flags, addr))
-		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+	if (driver->lock(bufferHandle, acquireFence, map_flags, addr)) {
+                buffer_handle_t buffer_handle = native_handle_clone(bufferHandle);
+                auto error = retain(buffer_handle);
+                if (error != GRALLOC1_ERROR_NONE) {
+                        delete buffer_handle;
+                        return error;
+                }
+                bufferHandle = buffer_handle;
+                if (driver->lock(bufferHandle, acquireFence, map_flags, addr))
+                        return CROS_GRALLOC_ERROR_BAD_HANDLE;
+                delete buffer_handle;
+        }
 
 	*outData = addr[0];
 
