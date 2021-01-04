@@ -76,7 +76,11 @@ static int i915_add_combinations(struct driver *drv)
 	uint64_t render, scanout_and_render, texture_only;
 
 	scanout_and_render = BO_USE_RENDER_MASK | BO_USE_SCANOUT;
+#ifdef USE_GRALLOC1
+	render = BO_USE_RENDER_MASK & ~(BO_USE_RENDERING | BO_USE_TEXTURE);
+#else
 	render = BO_USE_RENDER_MASK;
+#endif
 	texture_only = BO_USE_TEXTURE_MASK;
 	uint64_t linear_mask = BO_USE_RENDERSCRIPT | BO_USE_LINEAR | BO_USE_PROTECTED |
 			       BO_USE_SW_READ_OFTEN | BO_USE_SW_WRITE_OFTEN;
