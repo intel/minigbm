@@ -414,6 +414,13 @@ int convertToBufferUsage(uint64_t grallocUsage, uint64_t* outBufferUsage) {
     if (grallocUsage & BufferUsage::VIDEO_DECODER) {
         bufferUsage |= BO_USE_HW_VIDEO_DECODER;
     }
+#ifdef USE_GRALLOC1
+    if ((grallocUsage & BufferUsage::GPU_MIPMAP_COMPLETE) ||
+        (grallocUsage & BufferUsage::GPU_CUBE_MAP)) {
+        drv_log("GPU_MIPMAP_COMPLETE or GPU_CUBE_MAP not supported");
+        return -1;
+    }
+#endif
 
     *outBufferUsage = bufferUsage;
     return 0;
@@ -466,6 +473,12 @@ int convertToCrosDescriptor(const BufferDescriptorInfo& descriptor,
         drv_log("Failed to convert descriptor. Unsupported usage flags %s\n", usageString.c_str());
         return -1;
     }
+#ifdef USE_GRALLOC1
+    if (descriptor.layerCount > 1) {
+        drv_log("Failed to convert descriptor. Can't support more than 1 layercount %d\n", descriptor.layerCount);
+        return -1;
+    }
+#endif
     return 0;
 }
 
