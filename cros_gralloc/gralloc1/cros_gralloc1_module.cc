@@ -231,6 +231,8 @@ gralloc1_function_pointer_t CrosGralloc1::doGetFunction(int32_t intDescriptor)
 		return asFP<GRALLOC1_PFN_GET_TRANSPORT_SIZE>(getTransportSizeHook);
 	case GRALLOC1_FUNCTION_IMPORT_BUFFER:
 		return asFP<GRALLOC1_PFN_IMPORT_BUFFER>(importBufferHook);
+	case GRALLOC1_FUNCTION_FREE_BUFFER:
+		return asFP<GRALLOC1_PFN_FREE_BUFFER>(freeBufferHook);
 	case GRALLOC1_FUNCTION_INVALID:
 		drv_log("Invalid function descriptor");
 		return nullptr;
@@ -380,6 +382,36 @@ int32_t CrosGralloc1::importBuffer(const buffer_handle_t rawHandle, buffer_handl
 	return GRALLOC1_ERROR_NONE;
 }
 
+int32_t CrosGralloc1::freeBuffer(void *freeBuffer)
+{
+	if (!freeBuffer) {
+		drv_log("Failed to freeBuffer, empty handle.\n");
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
+
+	native_handle_t *bufferHandle = reinterpret_cast<native_handle_t*>(freeBuffer);
+
+	int ret = driver->release(bufferHandle);
+	if (ret) {
+		drv_log("Failed to release handle, bad handle.\n");
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
+
+	ret = native_handle_close(bufferHandle);
+	if (ret) {
+		drv_log("Failed to close handle, bad handle.\n");
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
+
+	ret = native_handle_delete(bufferHandle);
+	if (ret) {
+		drv_log("Failed to delete handle, bad handle.\n");
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
+
+	return GRALLOC1_ERROR_NONE;
+}
+
 int32_t CrosGralloc1::allocate(struct cros_gralloc_buffer_descriptor *descriptor,
 			       buffer_handle_t *outBufferHandle)
 {
@@ -464,6 +496,7 @@ int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage
 	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
 
 	if (driver->lock(bufferHandle, acquireFence, map_flags, addr)) {
+                drv_log("Plz switch to mapper 4.0 or call importBuffer & freeBuffer with mapper 2.0 before lock");
                 buffer_handle_t buffer_handle = native_handle_clone(bufferHandle);
                 auto error = retain(buffer_handle);
                 if (error != GRALLOC1_ERROR_NONE) {
@@ -564,6 +597,7 @@ int32_t CrosGralloc1::lockYCbCr(buffer_handle_t bufferHandle,
 	map_flags = cros_gralloc1_convert_map_usage(producerUsage, consumerUsage);
 
 	if (driver->lock(bufferHandle, acquireFence, map_flags, addr)) {
+		drv_log("Plz switch to mapper 4.0 or call importBuffer & freeBuffer with mapper 2.0 before lockFlex");
 		buffer_handle_t buffer_handle = native_handle_clone(bufferHandle);
 		auto error = retain(buffer_handle);
 		if (error != GRALLOC1_ERROR_NONE) {

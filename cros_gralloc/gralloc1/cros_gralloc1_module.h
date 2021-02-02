@@ -216,6 +216,12 @@ class CrosGralloc1 : public gralloc1_device_t
 		return getAdapter(device)->importBuffer(rawHandle, outBuffer);
 	}
 
+	int32_t freeBuffer(void *freeBuffer);
+	static int32_t freeBufferHook(gralloc1_device_t *device, void *freeBuffer)
+	{
+		return getAdapter(device)->freeBuffer(freeBuffer);
+	}
+
 	int32_t getProducerUsage(buffer_handle_t buffer,
 				 uint64_t * /*gralloc1_producer_usage_t*/ outUsage);
 	static int32_t getProducerUsageHook(gralloc1_device_t *device, buffer_handle_t buffer,
