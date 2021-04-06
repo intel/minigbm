@@ -638,6 +638,10 @@ static int virtio_gpu_init(struct driver *drv)
 			       BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE | BO_USE_HW_VIDEO_DECODER);
 	drv_modify_combination(drv, DRM_FORMAT_R16, &LINEAR_METADATA,
 			       BO_USE_CAMERA_READ | BO_USE_CAMERA_WRITE | BO_USE_HW_VIDEO_DECODER);
+#ifdef USE_GRALLOC1
+	drv_modify_combination(drv, DRM_FORMAT_ABGR8888, &LINEAR_METADATA,
+			       BO_USE_CAMERA_WRITE | BO_USE_CAMERA_READ);
+#endif
 
 	return drv_modify_linear_combinations(drv);
 }
