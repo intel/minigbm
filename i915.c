@@ -348,11 +348,7 @@ static int i915_bo_compute_metadata(struct bo *bo, uint32_t width, uint32_t heig
 		 * ALIGN(Y_stride / 2, 16), which we can make happen by
 		 * aligning to 32 bytes here.
 		 */
-#ifdef USE_GRALLOC1
-		uint32_t stride = ALIGN(width, 64);
-#else
 		uint32_t stride = ALIGN(width, 32);
-#endif
 		drv_bo_from_format(bo, stride, height, format);
 	} else if (modifier == I915_FORMAT_MOD_Y_TILED_CCS) {
 		/*
