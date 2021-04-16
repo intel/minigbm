@@ -231,8 +231,6 @@ gralloc1_function_pointer_t CrosGralloc1::doGetFunction(int32_t intDescriptor)
 		return asFP<GRALLOC1_PFN_GET_TRANSPORT_SIZE>(getTransportSizeHook);
 	case GRALLOC1_FUNCTION_IMPORT_BUFFER:
 		return asFP<GRALLOC1_PFN_IMPORT_BUFFER>(importBufferHook);
-	case GRALLOC1_FUNCTION_FREE_BUFFER:
-		return asFP<GRALLOC1_PFN_FREE_BUFFER>(freeBufferHook);
 	case GRALLOC1_FUNCTION_INVALID:
 		drv_log("Invalid function descriptor");
 		return nullptr;
@@ -373,42 +371,13 @@ int32_t CrosGralloc1::importBuffer(const buffer_handle_t rawHandle, buffer_handl
 	}
 	auto error = retain(buffer_handle);
 	if (error != GRALLOC1_ERROR_NONE) {
-		delete buffer_handle;
+		native_handle_close(buffer_handle);
+		native_handle_delete((native_handle_t*)buffer_handle);
 		*outBuffer = NULL;
 		return error;
 	}
 
 	*outBuffer = buffer_handle;
-	return GRALLOC1_ERROR_NONE;
-}
-
-int32_t CrosGralloc1::freeBuffer(void *freeBuffer)
-{
-	if (!freeBuffer) {
-		drv_log("Failed to freeBuffer, empty handle.\n");
-		return GRALLOC1_ERROR_BAD_HANDLE;
-	}
-
-	native_handle_t *bufferHandle = reinterpret_cast<native_handle_t*>(freeBuffer);
-
-	int ret = driver->release(bufferHandle);
-	if (ret) {
-		drv_log("Failed to release handle, bad handle.\n");
-		return GRALLOC1_ERROR_BAD_HANDLE;
-	}
-
-	ret = native_handle_close(bufferHandle);
-	if (ret) {
-		drv_log("Failed to close handle, bad handle.\n");
-		return GRALLOC1_ERROR_BAD_HANDLE;
-	}
-
-	ret = native_handle_delete(bufferHandle);
-	if (ret) {
-		drv_log("Failed to delete handle, bad handle.\n");
-		return GRALLOC1_ERROR_BAD_HANDLE;
-	}
-
 	return GRALLOC1_ERROR_NONE;
 }
 
@@ -473,10 +442,30 @@ int32_t CrosGralloc1::retain(buffer_handle_t bufferHandle)
 
 int32_t CrosGralloc1::release(buffer_handle_t bufferHandle)
 {
-	if (driver->release(bufferHandle))
-		return CROS_GRALLOC_ERROR_BAD_HANDLE;
+	if (!bufferHandle) {
+		drv_log("Failed to freeBuffer, empty handle.\n");
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
 
-	return CROS_GRALLOC_ERROR_NONE;
+	int ret = driver->release(bufferHandle);
+	if (ret) {
+		drv_log("Failed to release handle, bad handle.\n");
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
+
+	ret = native_handle_close(bufferHandle);
+	if (ret) {
+		drv_log("Failed to close handle, bad handle.\n");
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
+
+	ret = native_handle_delete((native_handle_t*)bufferHandle);
+	if (ret) {
+		drv_log("Failed to delete handle, bad handle.\n");
+		return GRALLOC1_ERROR_BAD_HANDLE;
+	}
+
+	return GRALLOC1_ERROR_NONE;
 }
 
 int32_t CrosGralloc1::lock(buffer_handle_t bufferHandle, gralloc1_producer_usage_t producerUsage,
