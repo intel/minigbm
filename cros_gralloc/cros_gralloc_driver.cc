@@ -483,6 +483,9 @@ int32_t cros_gralloc_driver::get_backing_store(buffer_handle_t handle, uint64_t 
 		return -EINVAL;
 	}
 
+#ifdef USE_GRALLOC1
+	*out_store = static_cast<uint64_t>(hnd->id);
+#else
 	auto buffer = get_buffer(hnd);
 	if (!buffer) {
 		drv_log("Invalid Reference.\n");
@@ -490,6 +493,7 @@ int32_t cros_gralloc_driver::get_backing_store(buffer_handle_t handle, uint64_t 
 	}
 
 	*out_store = static_cast<uint64_t>(buffer->get_id());
+#endif
 	return 0;
 }
 
