@@ -360,6 +360,11 @@ int convertToDrmFormat(PixelFormat format, uint32_t* outDrmFormat) {
             *outDrmFormat = DRM_FORMAT_YVU420_ANDROID;
             return 0;
     };
+#ifdef USE_GRALLOC1
+    *outDrmFormat = i915_private_convert_format((int)format);
+    if (DRM_FORMAT_NONE != *outDrmFormat)
+        return 0;
+#endif
     return -EINVAL;
 }
 
@@ -454,7 +459,7 @@ int convertToCrosDescriptor(const BufferDescriptorInfo& descriptor,
 
     if (convertToDrmFormat(descriptor.format, &outCrosDescriptor->drm_format)) {
 #ifdef USE_GRALLOC1
-        drv_log("Failed to convert descriptor by convertToDrmFormat");
+        drv_log("Failed to convert descriptor by convertToDrmFormat for format = %d\n", descriptor.format);
         if (!IsSupportedYUVFormat(static_cast<uint32_t>(descriptor.format))) {
             std::string pixelFormatString = getPixelFormatString(descriptor.format);
             drv_log("Failed to convert descriptor. Unsupported fomat %s\n", pixelFormatString.c_str());
