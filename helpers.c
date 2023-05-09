@@ -127,6 +127,11 @@ uint32_t drv_stride_from_format(uint32_t format, uint32_t width, size_t plane)
 	return stride;
 }
 
+int32_t drv_bytes_from_format(uint32_t format)
+{
+	int32_t pixel = DIV_ROUND_UP(bpp_from_format(format, 0), 8);
+	return pixel;
+}
 uint32_t drv_size_from_format(uint32_t format, uint32_t stride, uint32_t height, size_t plane)
 {
 	assert(plane < drv_num_planes_from_format(format));
